@@ -41,20 +41,22 @@ const adminPanel = document.getElementById('adminPanel');
 const purchaseRequests = document.getElementById('purchaseRequests');
 const totalSalesSpan = document.getElementById('totalSales');
 
-// Display all items with smooth animations
-items.forEach(item => {
-  const div = document.createElement('div');
-  div.className = 'item';
-  div.innerHTML = `<h3>${item.name}</h3><p>$${item.price.toFixed(2)}</p>`;
-  div.onclick = () => {
-    if (isAdmin) {
-      alert('Admins cannot buy items.');
-      return;
-    }
-    askPaymentMethod(item);
-  };
-  shop.appendChild(div);
-});
+// Function to dynamically display snacks
+function displaySnacks() {
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `<h3>${item.name}</h3><p>$${item.price.toFixed(2)}</p>`;
+    div.onclick = () => {
+      if (isAdmin) {
+        alert('Admins cannot buy items.');
+        return;
+      }
+      askPaymentMethod(item);
+    };
+    shop.appendChild(div);
+  });
+}
 
 // Ask for payment method
 function askPaymentMethod(item) {
@@ -161,3 +163,5 @@ window.clearAllRequests = () => {
   purchaseRequests.innerHTML = '';
 };
 
+// Display snacks when the page loads
+window.onload = displaySnacks;
