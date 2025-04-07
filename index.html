@@ -1,281 +1,188 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fancy Snack Shop</title>
-  <style>
-    /* Basic Styles */
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #121212;
-      color: white;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background-color: #1c1c1c;
-      padding: 20px;
-      text-align: center;
-      font-size: 2.5rem;
-    }
-    .settings-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: transparent;
-      border: none;
-      font-size: 2rem;
-      color: #fff;
-      cursor: pointer;
-    }
-    .container {
-      padding: 20px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 20px;
-    }
-    .item {
-      background-color: #333;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-      cursor: pointer;
-    }
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
-      background: #1e1e1e;
-      padding: 30px;
-      border-radius: 10px;
-      text-align: center;
-      width: 80%;
-    }
-    .modal button {
-      padding: 10px 20px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .admin-panel {
-      display: none;
-      padding: 20px;
-      background: #1c1c1c;
-      border-radius: 10px;
-      margin: 20px;
-    }
-    .admin-panel h3 {
-      margin: 0;
-      font-size: 1.5rem;
-    }
-    .admin-panel button {
-      padding: 10px 20px;
-      margin-top: 20px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    🍿 Fancy Snack & Drink Shop 🥤
-    <button class="settings-btn" onclick="toggleAdminLogin()">⚙️</button>
-  </header>
-  <div class="container" id="shop"></div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, push, onChildAdded, update, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-  <!-- Modal for purchase confirmation -->
-  <div class="modal" id="modal">
-    <div class="modal-content" id="modal-content">
-      <p id="modal-text">Waiting for seller to confirm proof of purchase...</p>
-      <button onclick="closeModal()">Close</button>
-    </div>
-  </div>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAwrXlL0oaON4pE4Ko9LEZsBj1PI5YqtkM",
+    authDomain: "website-4f366.firebaseapp.com",
+    databaseURL: "https://website-4f366-default-rtdb.firebaseio.com",
+    projectId: "website-4f366",
+    storageBucket: "website-4f366.firebasestorage.app",
+    messagingSenderId: "915291737784",
+    appId: "1:915291737784:web:5f5b0a2803f29d299d6e4d",
+    measurementId: "G-GSTM5TR39X"
+  };
 
-  <!-- Admin Login Modal -->
-  <div class="modal" id="adminModal">
-    <div class="modal-content">
-      <h3>Admin Login</h3>
-      <input type="text" id="username" placeholder="Username">
-      <input type="password" id="password" placeholder="Password">
-      <button onclick="loginAdmin()">Login</button>
-      <div id="adminMessage"></div>
-    </div>
-  </div>
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-  <!-- Admin Panel -->
-  <div class="admin-panel" id="adminPanel">
-    <h3>Admin Panel</h3>
-    <p>Total Sales: $<span id="totalSales">0.00</span></p>
-    <div id="purchaseRequests"></div>
-    <button onclick="clearAllRequests()">Clear All</button>
-  </div>
+  const items = [
+    { name: 'Hot Cheetos', price: 2.5 },
+    { name: 'Mountain Dew', price: 1.75 },
+    { name: 'Twix', price: 1.25 },
+    { name: 'Red Bull', price: 3.00 },
+    { name: 'Takis', price: 2.75 },
+    { name: 'Pepsi', price: 1.50 },
+    { name: 'Gummy Worms', price: 1.00 },
+    { name: 'KitKat', price: 1.30 },
+    { name: 'Water Bottle', price: 1.00 },
+    { name: 'Random Snack', price: 2.00 },
+    { name: 'Energy Shot', price: 2.99 }
+  ];
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  let totalSales = 0;
+  let isAdmin = false;
+  let currentPurchaseKey = null;
 
-    // Initialize Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyAwrXlL0oaON4pE4Ko9LEZsBj1PI5YqtkM",
-      authDomain: "website-4f366.firebaseapp.com",
-      databaseURL: "https://website-4f366-default-rtdb.firebaseio.com",
-      projectId: "website-4f366",
-      storageBucket: "website-4f366.firebasestorage.app",
-      messagingSenderId: "915291737784",
-      appId: "1:915291737784:web:5f5b0a2803f29d299d6e4d",
-      measurementId: "G-GSTM5TR39X"
+  const shop = document.getElementById('shop');
+  const modal = document.getElementById('modal');
+  const modalContent = document.getElementById('modal-content');
+  const modalText = document.getElementById('modal-text');
+  const adminModal = document.getElementById('adminModal');
+  const adminPanel = document.getElementById('adminPanel');
+  const purchaseRequests = document.getElementById('purchaseRequests');
+  const totalSalesSpan = document.getElementById('totalSales');
+
+  // Display items
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `<h3>${item.name}</h3><p>$${item.price.toFixed(2)}</p>`;
+    div.onclick = () => {
+      if (isAdmin) {
+        alert('Admins cannot buy items.');
+        return;
+      }
+      sendPurchaseRequest(item.name, item.price);
     };
+    shop.appendChild(div);
+  });
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    const items = [
-      { name: 'Hot Cheetos', price: 2.5 },
-      { name: 'Mountain Dew', price: 1.75 },
-      { name: 'Twix', price: 1.25 },
-      { name: 'Red Bull', price: 3.00 },
-      { name: 'Takis', price: 2.75 },
-      { name: 'Pepsi', price: 1.50 },
-      { name: 'Gummy Worms', price: 1.00 },
-      { name: 'KitKat', price: 1.30 },
-      { name: 'Water Bottle', price: 1.00 },
-      { name: 'Random Snack', price: 2.00 },
-      { name: 'Energy Shot', price: 2.99 }
-    ];
-
-    let totalSales = 0;
-    let isAdmin = false;
-    let currentPurchaseKey = null;
-
-    const shop = document.getElementById('shop');
-    const modal = document.getElementById('modal');
-    const modalContent = document.getElementById('modal-content');
-    const modalText = document.getElementById('modal-text');
-    const adminModal = document.getElementById('adminModal');
-    const adminPanel = document.getElementById('adminPanel');
-    const purchaseRequests = document.getElementById('purchaseRequests');
-    const totalSalesSpan = document.getElementById('totalSales');
-
-    // Display all items
-    items.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'item';
-      div.innerHTML = `<h3>${item.name}</h3><p>$${item.price.toFixed(2)}</p>`;
-      div.onclick = () => {
-        if (isAdmin) {
-          alert('Admins cannot buy items.');
-          return;
-        }
-        sendPurchaseRequest(item.name, item.price);
-      };
-      shop.appendChild(div);
-    });
-
-    // Send purchase request
-    window.sendPurchaseRequest = (itemName, price) => {
-      const request = {
-        item: itemName,
-        price: price,
-        confirmed: false,
-        timestamp: Date.now()
-      };
-      const newRequestRef = push(ref(db, 'purchaseRequests'), request);
-      currentPurchaseKey = newRequestRef.key;
-      modal.style.display = 'flex';
-      modalText.textContent = 'Waiting for seller to confirm proof of purchase...';
+  // Send purchase request
+  window.sendPurchaseRequest = (itemName, price) => {
+    const request = {
+      item: itemName,
+      price: price,
+      confirmed: false,
+      timestamp: Date.now()
     };
+    const newRequestRef = push(ref(db, 'purchaseRequests'), request);
+    currentPurchaseKey = newRequestRef.key;
+    modal.style.display = 'flex';
+    modalText.textContent = 'Waiting for seller to confirm proof of purchase...';
 
-    // Listen for admin action
-    window.listenForAdmin = () => {
-      const requestsRef = ref(db, 'purchaseRequests');
-      onChildAdded(requestsRef, (snapshot) => {
+    // Watch for confirmation
+    const requestRef = ref(db, `purchaseRequests/${currentPurchaseKey}`);
+    const interval = setInterval(() => {
+      get(requestRef).then(snapshot => {
         const data = snapshot.val();
-        if (!data.confirmed) {
-          const div = document.createElement('div');
-          div.innerHTML = `
-            <p><strong>${data.item}</strong> - $${data.price}</p>
-            <button onclick="confirmPurchase('${snapshot.key}', ${data.price})">Confirm</button>
-          `;
-          purchaseRequests.appendChild(div);
+        if (data?.confirmed) {
+          clearInterval(interval);
+          showTipScreen(data.price);
         }
       });
-    };
+    }, 1000);
+  };
 
-    // Admin confirms purchase
-    window.confirmPurchase = (key, price) => {
-      const requestRef = ref(db, `purchaseRequests/${key}`);
-      update(requestRef, { confirmed: true });
+  // Show tip options
+  function showTipScreen(price) {
+    modalContent.innerHTML = `
+      <p>Thank you for your purchase!</p>
+      <p>Select a tip amount:</p>
+      <button onclick="thankUser(${price}, 20)">Tip 20%</button>
+      <button onclick="thankUser(${price}, 30)">Tip 30%</button>
+      <button onclick="thankUser(${price}, 50)">Tip 50%</button>
+    `;
+  }
 
-      // Update total sales
-      totalSales += price;
-      totalSalesSpan.textContent = totalSales.toFixed(2);
+  // Thank user with tip and update sales
+  window.thankUser = (price, tipPercent) => {
+    const tipAmount = price * (tipPercent / 100);
+    totalSales += tipAmount;
+    totalSalesSpan.textContent = totalSales.toFixed(2);
+    update(ref(db, 'totalSales'), { amount: totalSales });
 
-      // Hide modal and show success message for buyer
-      modal.style.display = 'none';
-      modalContent.innerHTML = `
-        <p>Thank you for your purchase!</p>
-        <p>Select a tip amount:</p>
-        <button onclick="thankUser(20)">Tip 20%</button>
-        <button onclick="thankUser(30)">Tip 30%</button>
-        <button onclick="thankUser(50)">Tip 50%</button>
-      `;
-    };
+    modalContent.innerHTML = `
+      <p>Thanks for buying and tipping <strong>${tipPercent}%</strong>! 🎉</p>
+      <button onclick="modal.style.display='none'" style="margin-top:20px; padding:10px 20px; background:#4CAF50; color:white; border:none; border-radius:8px;">Close</button>
+    `;
+  };
 
-    // Show thank you message for buyer
-    window.thankUser = (tip) => {
-      modalContent.innerHTML = `
-        <p>Thanks for buying and tipping <strong>${tip}%</strong>! 🎉</p>
-        <button onclick="modal.style.display='none'" style="margin-top:20px; padding:10px 20px; background:#4CAF50; color:white; border:none; border-radius:8px;">Close</button>
-      `;
-    };
+  // Close modal
+  window.closeModal = () => {
+    modal.style.display = 'none';
+  };
 
-    // Close the modal
-    window.closeModal = () => {
-      modal.style.display = 'none';
-    };
+  // Toggle admin login modal
+  window.toggleAdminLogin = () => {
+    adminModal.style.display = 'flex';
+  };
 
-    // Show admin login modal
-    window.toggleAdminLogin = function() {
-      adminModal.style.display = 'flex';
-    };
+  // Admin login
+  window.loginAdmin = () => {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    if (user === 'admin' && pass === 'diddy') {
+      document.getElementById('adminMessage').innerHTML = '<p style="color: green;">✅ Logged in as Admin</p>';
+      setTimeout(() => { document.getElementById('adminMessage').innerHTML = ''; }, 3000);
+      isAdmin = true;
+      adminPanel.style.display = 'block';
+      adminModal.style.display = 'none';
 
-    // Admin login functionality
-    window.loginAdmin = function() {
-      const user = document.getElementById('username').value;
-      const pass = document.getElementById('password').value;
-      if (user === 'admin' && pass === 'diddy') {
-        document.getElementById('adminMessage').innerHTML = '<p style="color: green;">✅ Logged in as Admin</p>';
-        setTimeout(() => { document.getElementById('adminMessage').innerHTML = ''; }, 3000);
-        isAdmin = true;
-        adminPanel.style.display = 'block';
-        listenForAdmin();
-        adminModal.style.display = 'none';
-      } else {
-        document.getElementById('adminMessage').innerHTML = '<p style="color: red;">❌ Incorrect credentials</p>';
+      // Load total sales from Firebase
+      const salesRef = ref(db, 'totalSales');
+      get(salesRef).then(snapshot => {
+        if (snapshot.exists()) {
+          totalSales = snapshot.val().amount || 0;
+          totalSalesSpan.textContent = totalSales.toFixed(2);
+        }
+      });
+
+      listenForAdmin();
+    } else {
+      document.getElementById('adminMessage').innerHTML = '<p style="color: red;">❌ Incorrect credentials</p>';
+    }
+  };
+
+  // Listen for new purchase requests
+  window.listenForAdmin = () => {
+    const requestsRef = ref(db, 'purchaseRequests');
+    onChildAdded(requestsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data.confirmed) {
+        const div = document.createElement('div');
+        div.innerHTML = `
+          <p><strong>${data.item}</strong> - $${data.price}</p>
+          <button onclick="confirmPurchase('${snapshot.key}', ${data.price})">Confirm</button>
+        `;
+        purchaseRequests.appendChild(div);
       }
-    };
+    });
+  };
 
-    // Clear all purchase requests
-    window.clearAllRequests = () => {
-      const requestsRef = ref(db, 'purchaseRequests');
-      remove(requestsRef);
-      purchaseRequests.innerHTML = '';
-    };
-  </script>
-</body>
-</html>
+  // Confirm purchase (admin)
+  window.confirmPurchase = (key, price) => {
+    const requestRef = ref(db, `purchaseRequests/${key}`);
+    update(requestRef, { confirmed: true });
+
+    totalSales += price;
+    totalSalesSpan.textContent = totalSales.toFixed(2);
+    update(ref(db, 'totalSales'), { amount: totalSales });
+
+    // Remove the request from admin panel
+    const buttons = purchaseRequests.querySelectorAll('button');
+    buttons.forEach(btn => {
+      if (btn.getAttribute('onclick')?.includes(key)) {
+        btn.parentElement.remove();
+      }
+    });
+  };
+
+  // Clear all requests
+  window.clearAllRequests = () => {
+    const requestsRef = ref(db, 'purchaseRequests');
+    remove(requestsRef);
+    purchaseRequests.innerHTML = '';
+  };
+</script>
 
