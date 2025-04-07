@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fancy Snack Shop</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #ffe8e8, #e0f7ff);
+      color: #333;
+    }
+    header {
+      background-color: #ff5e78;
+      padding: 20px;
+      text-align: center;
+      color: white;
+      font-size: 2rem;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 30px;
+    }
+    .item {
+      background-color: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .item:hover {
+      transform: translateY(-5px);
+    }
+    .item h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    .item p {
+      margin: 5px 0 0;
+      color: #888;
+    }
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    .tip-options button {
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      background-color: #5e9cff;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .tip-options button:hover {
+      background-color: #3a7ee0;
+    }
+  </style>
+</head>
+<body>
+  <header>🍿 Fancy Snack & Drink Shop 🥤</header>
+  <div class="container" id="shop">
+    <!-- Items will be added here dynamically -->
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content" id="modal-content">
+      <p id="modal-text">Waiting for seller to confirm proof of purchase...</p>
+    </div>
+  </div>
+
+  <script>
+    const items = [
+      { name: 'Hot Cheetos', price: '$2.50' },
+      { name: 'Mountain Dew', price: '$1.75' },
+      { name: 'Twix', price: '$1.25' },
+      { name: 'Red Bull', price: '$3.00' },
+      { name: 'Takis', price: '$2.75' },
+      { name: 'Pepsi', price: '$1.50' },
+      { name: 'Gummy Worms', price: '$1.00' },
+      { name: 'KitKat', price: '$1.30' },
+      { name: 'Water Bottle', price: '$1.00' },
+      { name: 'Random Snack', price: '$2.00' },
+      { name: 'Energy Shot', price: '$2.99' },
+    ];
+
+    const shop = document.getElementById('shop');
+    const modal = document.getElementById('modal');
+    const modalContent = document.getElementById('modal-content');
+    const modalText = document.getElementById('modal-text');
+
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `<h3>${item.name}</h3><p>${item.price}</p>`;
+      div.onclick = () => {
+        modal.style.display = 'flex';
+        modalText.textContent = 'Waiting for seller to confirm proof of purchase...';
+
+        setTimeout(() => {
+          modalContent.innerHTML = `
+            <p>Purchase confirmed for <strong>${item.name}</strong> - ${item.price}</p>
+            <p>Select a tip amount:</p>
+            <div class="tip-options">
+              <button onclick="thankUser(20)">Tip 20%</button>
+              <button onclick="thankUser(30)">Tip 30%</button>
+              <button onclick="thankUser(50)">Tip 50%</button>
+            </div>
+          `;
+        }, 2000);
+      };
+      shop.appendChild(div);
+    });
+
+    function thankUser(tip) {
+      modalContent.innerHTML = `
+        <p>Thanks for buying and tipping <strong>${tip}%</strong>! 🎉</p>
+        <button onclick="modal.style.display='none'" style="margin-top:20px; padding:10px 20px; background:#4CAF50; color:white; border:none; border-radius:8px; cursor:pointer;">Close</button>
+      `;
+    }
+
+    window.onclick = function(e) {
+      if (e.target === modal) modal.style.display = 'none';
+    };
+  </script>
+</body>
+</html>
