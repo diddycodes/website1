@@ -32,7 +32,7 @@
       right: 10px;
       background: transparent;
       border: none;
-      font-size: 1.2rem;
+      font-size: 2rem;
       color: #fff;
       cursor: pointer;
       opacity: 0.7;
@@ -76,6 +76,14 @@
       from { opacity: 0; transform: translateY(15px); }
       to { opacity: 1; transform: translateY(0); }
     }
+    @keyframes fadeInModal {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideInModal {
+      from { transform: translateY(50px); }
+      to { transform: translateY(0); }
+    }
     .modal {
       position: fixed;
       top: 0; left: 0;
@@ -96,17 +104,17 @@
       width: 90%;
       animation: slideInModal 0.3s ease-out;
     }
-    .tip-options button {
-      margin: 10px;
+    .modal button {
+      margin-top: 20px;
       padding: 10px 20px;
-      border: none;
-      background-color: #4CAF50;
+      background: #4CAF50;
       color: white;
+      border: none;
       border-radius: 8px;
       cursor: pointer;
       transition: background-color 0.3s ease;
     }
-    .tip-options button:hover { background-color: #45a049; }
+    .modal button:hover { background-color: #45a049; }
     .admin-login {
       display: none;
       flex-direction: column;
@@ -126,6 +134,14 @@
       border-radius: 6px;
       cursor: pointer;
     }
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 1.5rem;
+      color: #fff;
+      cursor: pointer;
+    }
     .admin-panel {
       display: none;
       padding: 20px;
@@ -134,14 +150,6 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.6);
       margin: 20px;
       animation: fadeInPanel 1s ease-out;
-    }
-    @keyframes fadeInModal {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes slideInModal {
-      from { transform: translateY(50px); }
-      to { transform: translateY(0); }
     }
     @keyframes fadeInPanel {
       from { opacity: 0; transform: translateY(10px); }
@@ -153,9 +161,17 @@
       .item p { font-size: 0.9rem; }
       .modal-content { width: 90%; }
       .settings-btn {
-        font-size: 1.2rem;
-        padding: 12px;
-        right: 5px;
+        font-size: 2rem;
+        padding: 15px;
+      }
+      .admin-login input,
+      .admin-login button {
+        width: 100%;
+      }
+      .close-btn {
+        font-size: 2rem;
+        right: 15px;
+        top: 15px;
       }
     }
   </style>
@@ -166,14 +182,17 @@
     <button class="settings-btn" onclick="toggleAdminLogin()">⚙️</button>
   </header>
   <div class="container" id="shop"></div>
+
   <div class="modal" id="modal">
     <div class="modal-content" id="modal-content">
       <p id="modal-text">Waiting for seller to confirm proof of purchase...</p>
+      <button onclick="closeModal()">Close</button>
     </div>
   </div>
 
   <div class="modal" id="adminModal">
     <div class="modal-content">
+      <span class="close-btn" onclick="closeAdminLogin()">×</span>
       <h3>Admin Login</h3>
       <div class="admin-login" id="adminLogin">
         <input type="text" id="username" placeholder="Username">
@@ -325,6 +344,14 @@
       purchaseRequests.innerHTML = '';
     };
 
+    window.closeModal = () => {
+      modal.style.display = 'none';
+    };
+
+    window.closeAdminLogin = () => {
+      adminModal.style.display = 'none';
+    };
+
     items.forEach(item => {
       const div = document.createElement('div');
       div.className = 'item';
@@ -338,11 +365,6 @@
       };
       shop.appendChild(div);
     });
-
-    window.onclick = function(e) {
-      if (e.target === modal) modal.style.display = 'none';
-      if (e.target === adminModal) adminModal.style.display = 'none';
-    };
   </script>
 </body>
 </html>
