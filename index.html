@@ -1,133 +1,240 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-// Initialize Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyAwrXlL0oaON4pE4Ko9LEZsBj1PI5YqtkM",
-  authDomain: "website-4f366.firebaseapp.com",
-  databaseURL: "https://website-4f366-default-rtdb.firebaseio.com",
-  projectId: "website-4f366",
-  storageBucket: "website-4f366.appspot.com",
-  messagingSenderId: "915291737784",
-  appId: "1:915291737784:web:5f5b0a2803f29d299d6e4d",
-  measurementId: "G-GSTM5TR39X"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-let totalSales = 0;
-let isAdmin = false;
-const shop = document.getElementById('shop');
-const modal = document.getElementById('modal');
-const modalContent = document.getElementById('modal-content');
-const modalText = document.getElementById('modal-text');
-const adminModal = document.getElementById('adminModal');
-const adminPanel = document.getElementById('adminPanel');
-const purchaseRequests = document.getElementById('purchaseRequests');
-const totalSalesSpan = document.getElementById('totalSales');
-
-// Ask for payment method
-function askPaymentMethod(itemName, price) {
-  modal.style.display = 'flex';
-  modalContent.innerHTML = `
-    <h3>How are you paying?</h3>
-    <button onclick="sendPurchaseRequest('${itemName}', ${price}, 'PayPal')">PayPal</button>
-    <button onclick="sendPurchaseRequest('${itemName}', ${price}, 'CashApp')">CashApp</button>
-    <button onclick="sendPurchaseRequest('${itemName}', ${price}, 'Apple Pay')">Apple Pay</button>
-  `;
-}
-
-// Send Purchase Request to Firebase
-window.sendPurchaseRequest = (item, price, method) => {
-  const request = {
-    item,
-    price,
-    method,
-    confirmed: false,
-    timestamp: Date.now()
-  };
-  const newRequestRef = push(ref(db, 'purchaseRequests'), request);
-  modalContent.innerHTML = `
-    <p>Send your payment via ${method}</p>
-    ${method === 'PayPal' ? `
-      <p>Send to: <strong>kailanpacheco70@gmail.com</strong></p>
-      <button onclick="navigator.clipboard.writeText('kailanpacheco70@gmail.com')">Copy Email</button>
-      <a href="https://www.paypal.com" target="_blank">Go to PayPal</a>
-    ` : '<p>Please complete your payment and wait for confirmation.</p>'}
-    <p>Waiting for seller to confirm purchase...</p>
-    <button onclick="closeModal()">Close</button>
-  `;
-};
-
-// Admin listens for purchases
-window.listenForAdmin = () => {
-  const requestsRef = ref(db, 'purchaseRequests');
-  onChildAdded(requestsRef, (snapshot) => {
-    const data = snapshot.val();
-    if (!data.confirmed) {
-      const div = document.createElement('div');
-      div.id = snapshot.key;
-      div.innerHTML = `
-        <p><strong>${data.item}</strong> - $${data.price} via ${data.method}</p>
-        <button onclick="confirmPurchase('${snapshot.key}', ${data.price})">Confirm</button>
-      `;
-      purchaseRequests.appendChild(div);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fancy Snack Shop</title>
+  <style>
+    /* Basic Styles */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: white;
+      margin: 0;
+      padding: 0;
     }
-  });
-};
+    header {
+      background-color: #1c1c1c;
+      padding: 20px;
+      text-align: center;
+      font-size: 2.5rem;
+      position: relative;
+    }
+    .settings-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      font-size: 2rem;
+      color: #fff;
+      cursor: pointer;
+    }
+    .container {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      animation: fadeIn 2s ease-in-out;
+    }
+    .item {
+      background-color: #333;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: transform 0.2s ease-in-out;
+    }
+    .item:hover {
+      transform: scale(1.05);
+    }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #1e1e1e;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      width: 80%;
+    }
+    .modal button {
+      padding: 10px 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .admin-panel {
+      display: none;
+      padding: 20px;
+      background: #1c1c1c;
+      border-radius: 10px;
+      margin: 20px;
+    }
+    .admin-panel h3 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    .admin-panel button {
+      padding: 10px 20px;
+      margin-top: 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    🍿 Fancy Snack & Drink Shop 🥤
+    <button class="settings-btn" onclick="toggleAdminLogin()">⚙️</button>
+  </header>
 
-// Admin confirms purchase
-window.confirmPurchase = (key, price) => {
-  const requestRef = ref(db, `purchaseRequests/${key}`);
-  update(requestRef, { confirmed: true });
+  <div class="container" id="shop">
+    <!-- Snacks will be displayed here -->
+    <div class="item" onclick="sendPurchaseRequest('Hot Cheetos', 2.5)">
+      <h3>Hot Cheetos</h3>
+      <p>$2.50</p>
+    </div>
+    <div class="item" onclick="sendPurchaseRequest('Mountain Dew', 1.75)">
+      <h3>Mountain Dew</h3>
+      <p>$1.75</p>
+    </div>
+    <div class="item" onclick="sendPurchaseRequest('Twix', 1.25)">
+      <h3>Twix</h3>
+      <p>$1.25</p>
+    </div>
+    <div class="item" onclick="sendPurchaseRequest('Red Bull', 3.00)">
+      <h3>Red Bull</h3>
+      <p>$3.00</p>
+    </div>
+    <div class="item" onclick="sendPurchaseRequest('Takis', 2.75)">
+      <h3>Takis</h3>
+      <p>$2.75</p>
+    </div>
+    <div class="item" onclick="sendPurchaseRequest('Pepsi', 1.50)">
+      <h3>Pepsi</h3>
+      <p>$1.50</p>
+    </div>
+  </div>
 
-  // Update total sales
-  totalSales += price;
-  totalSalesSpan.textContent = totalSales.toFixed(2);
+  <!-- Modal for payment selection -->
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <p id="modal-text">Please choose a payment method:</p>
+      <button onclick="showPayment('paypal')">Pay with PayPal</button>
+      <button onclick="showPayment('cashapp')">Pay with CashApp</button>
+      <button onclick="showPayment('applepay')">Pay with Apple Pay</button>
+      <button onclick="closeModal()">Close</button>
+    </div>
+  </div>
 
-  // Show success message and tip options for the buyer
-  modal.style.display = 'flex';
-  modalContent.innerHTML = `
-    <p>Thank you for your purchase!</p>
-    <p>Choose a tip:</p>
-    <button onclick="thankUser(20)">Tip 20%</button>
-    <button onclick="thankUser(30)">Tip 30%</button>
-    <button onclick="thankUser(50)">Tip 50%</button>
-  `;
-};
+  <!-- PayPal Instructions Modal -->
+  <div class="modal" id="paypalModal">
+    <div class="modal-content">
+      <h3>PayPal Payment</h3>
+      <p>Send payment to: <strong>kailanpacheco70@gmail.com</strong></p>
+      <button onclick="copyToClipboard('kailanpacheco70@gmail.com')">Copy PayPal Email</button>
+      <a href="https://paypal.com" target="_blank" style="color: #4CAF50;">Pay via PayPal</a>
+      <button onclick="closePaypalModal()">Close</button>
+    </div>
+  </div>
 
-// Show thank you message and close modal
-window.thankUser = (tip) => {
-  modalContent.innerHTML = `<p>Thanks for tipping ${tip}%! 🎉</p><button onclick="closeModal()">Close</button>`;
-};
+  <!-- Admin Login Modal -->
+  <div class="modal" id="adminModal">
+    <div class="modal-content">
+      <h3>Admin Login</h3>
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <button onclick="loginAdmin()">Login</button>
+      <div id="adminMessage"></div>
+    </div>
+  </div>
 
-// Close the modal
-window.closeModal = () => {
-  modal.style.display = 'none';
-};
+  <!-- Admin Panel -->
+  <div class="admin-panel" id="adminPanel">
+    <h3>Admin Panel</h3>
+    <p>Total Sales: $<span id="totalSales">0.00</span></p>
+    <div id="purchaseRequests"></div>
+    <button onclick="clearAllRequests()">Clear All</button>
+  </div>
 
-// Admin login and panel
-window.toggleAdminLogin = function() {
-  adminModal.style.display = 'flex';
-};
+  <script type="text/javascript">
+    let totalSales = 0;
+    let isAdmin = false;
+    let currentPurchaseKey = null;
 
-window.loginAdmin = function() {
-  const user = document.getElementById('username').value;
-  const pass = document.getElementById('password').value;
-  if (user === 'admin' && pass === 'diddy') {
-    isAdmin = true;
-    adminPanel.style.display = 'block';
-    adminModal.style.display = 'none';
-    document.getElementById('adminMessage').textContent = '✅ Logged in as Admin';
-    listenForAdmin();
-  } else {
-    document.getElementById('adminMessage').textContent = '❌ Incorrect credentials';
-  }
-};
+    // Display snack items and handle purchase requests
+    function sendPurchaseRequest(itemName, price) {
+      currentPurchaseKey = Date.now();
+      document.getElementById('modal-text').textContent = `You are purchasing ${itemName} for $${price}.`;
+      document.getElementById('modal').style.display = 'flex';
+    }
 
-window.clearAllRequests = () => {
-  const requestsRef = ref(db, 'purchaseRequests');
-  remove(requestsRef);
-  purchaseRequests.innerHTML = '';
-};
+    // Show payment modal with selected payment method
+    function showPayment(paymentMethod) {
+      if (paymentMethod === 'paypal') {
+        document.getElementById('paypalModal').style.display = 'flex';
+      } else {
+        alert('Payment method coming soon!');
+      }
+    }
+
+    // Copy PayPal email to clipboard
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text);
+      alert('PayPal email copied!');
+    }
+
+    // Close modals
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+
+    function closePaypalModal() {
+      document.getElementById('paypalModal').style.display = 'none';
+    }
+
+    // Admin login functionality
+    function toggleAdminLogin() {
+      document.getElementById('adminModal').style.display = 'flex';
+    }
+
+    function loginAdmin() {
+      const user = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+      if (user === 'admin' && pass === 'diddy') {
+        document.getElementById('adminMessage').innerHTML = '<p style="color: green;">✅ Logged in as Admin</p>';
+        isAdmin = true;
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('adminModal').style.display = 'none';
+      } else {
+        document.getElementById('adminMessage').innerHTML = '<p style="color: red;">❌ Incorrect credentials</p>';
+      }
+    }
+
+    // Clear all purchase requests
+    function clearAllRequests() {
+      alert('All requests cleared!');
+      // Here we would clear requests from a backend or database
+    }
+  </script>
+</body>
+</html>
+
