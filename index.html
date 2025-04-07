@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fancy Snack Shop</title>
+  <title>🥢 Fancy Snack Shop 🍡</title>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #ffe8e8, #e0f7ff);
+      background: linear-gradient(135deg, #fff5eb, #e8f9f1);
       color: #333;
     }
     header {
@@ -126,7 +126,7 @@
 </head>
 <body>
   <header>
-    🍿 Fancy Snack & Drink Shop 🥤
+    🥢 Fancy Snack Shop 🍡
     <button class="settings-btn" onclick="toggleAdminLogin()">⚙️</button>
   </header>
   <div class="container" id="shop"></div>
@@ -154,7 +154,23 @@
     <div id="purchaseRequests"></div>
   </div>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
     const items = [
       { name: 'Hot Cheetos', price: 2.5 },
       { name: 'Mountain Dew', price: 1.75 },
@@ -166,7 +182,7 @@
       { name: 'KitKat', price: 1.30 },
       { name: 'Water Bottle', price: 1.00 },
       { name: 'Random Snack', price: 2.00 },
-      { name: 'Energy Shot', price: 2.99 },
+      { name: 'Energy Shot', price: 2.99 }
     ];
 
     let totalSales = 0;
@@ -188,26 +204,23 @@
       div.className = 'item';
       div.innerHTML = `<h3>${item.name}</h3><p>$${item.price.toFixed(2)}</p>`;
       div.onclick = () => {
-        if (isAdmin) {
-          alert('Admins can’t buy.');
-          return;
-        }
+        if (isAdmin) return alert('Admins can’t buy.');
         modal.style.display = 'flex';
         modalText.textContent = 'Waiting for seller to confirm proof of purchase...';
 
-        const request = document.createElement('div');
-        request.innerHTML = `
-          <p><strong>${item.name}</strong> - $${item.price.toFixed(2)}</p>
-          <button onclick="confirmPurchase(${item.price})">Confirm Purchase</button>
-        `;
-        purchaseRequests.appendChild(request);
+        const newRequest = push(ref(db, 'requests'));
+        set(newRequest, {
+          name: item.name,
+          price: item.price
+        });
       };
       shop.appendChild(div);
     });
 
-    function confirmPurchase(amount) {
+    function confirmPurchase(key, amount) {
       totalSales += amount;
       totalSalesSpan.textContent = totalSales.toFixed(2);
+      remove(ref(db, 'requests/' + key));
       modalContent.innerHTML = `
         <p>Purchase confirmed!</p>
         <p>Select a tip amount:</p>
@@ -220,12 +233,12 @@
       modal.style.display = 'flex';
     }
 
-    function thankUser(tip) {
+    window.thankUser = function(tip) {
       modalContent.innerHTML = `
         <p>Thanks for buying and tipping <strong>${tip}%</strong>! 🎉</p>
         <button onclick="modal.style.display='none'" style="margin-top:20px; padding:10px 20px; background:#4CAF50; color:white; border:none; border-radius:8px; cursor:pointer;">Close</button>
       `;
-    }
+    };
 
     function toggleAdminLogin() {
       adminModal.style.display = 'flex';
@@ -241,9 +254,23 @@
         adminLogin.style.display = 'none';
         isAdmin = true;
         adminPanel.style.display = 'block';
+        listenForRequests();
       } else {
         adminMessage.innerHTML = '<p style="color: red;">❌ Incorrect credentials</p>';
       }
+    }
+
+    function listenForRequests() {
+      const reqRef = ref(db, 'requests');
+      onValue(reqRef, snapshot => {
+        purchaseRequests.innerHTML = '';
+        snapshot.forEach(child => {
+          const data = child.val();
+          const div = document.createElement('div');
+          div.innerHTML = `<p><strong>${data.name}</strong> - $${data.price.toFixed(2)} <button onclick="confirmPurchase('${child.key}', ${data.price})">Confirm Purchase</button></p>`;
+          purchaseRequests.appendChild(div);
+        });
+      });
     }
 
     window.onclick = function(e) {
