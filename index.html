@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fancy Snack Shop</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -19,10 +20,25 @@
       font-size: 2rem;
       font-weight: bold;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    .settings-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      font-size: 0.8rem;
+      color: white;
+      cursor: pointer;
+      opacity: 0.5;
+    }
+    .settings-btn:hover {
+      opacity: 1;
     }
     .container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 20px;
       padding: 30px;
     }
@@ -32,18 +48,18 @@
       border-radius: 15px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.1);
       cursor: pointer;
-      transition: transform 0.2s ease;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: fadeIn 0.5s ease-in;
     }
     .item:hover {
-      transform: translateY(-5px);
+      transform: translateY(-8px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
     }
-    .item h3 {
-      margin: 0;
-      font-size: 1.2rem;
-    }
-    .item p {
-      margin: 5px 0 0;
-      color: #888;
+    .item h3 { margin: 0; font-size: 1.2rem; }
+    .item p { margin: 5px 0 0; color: #888; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .modal {
       position: fixed;
@@ -62,6 +78,7 @@
       text-align: center;
       max-width: 400px;
       width: 90%;
+      animation: fadeIn 0.3s ease-in-out;
     }
     .tip-options button {
       margin: 10px;
@@ -71,66 +88,137 @@
       color: white;
       border-radius: 8px;
       cursor: pointer;
+      transition: background-color 0.2s ease;
     }
-    .tip-options button:hover {
-      background-color: #3a7ee0;
+    .tip-options button:hover { background-color: #3a7ee0; }
+    .admin-login {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .admin-login input {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .admin-login button {
+      padding: 10px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .admin-panel {
+      display: none;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      margin: 20px;
+    }
+    @media (max-width: 600px) {
+      header { font-size: 1.5rem; }
+      .item h3 { font-size: 1rem; }
     }
   </style>
 </head>
 <body>
-  <header>🍿 Fancy Snack & Drink Shop 🥤</header>
-  <div class="container" id="shop">
-    <!-- Items will be added here dynamically -->
-  </div>
-
+  <header>
+    🍿 Fancy Snack & Drink Shop 🥤
+    <button class="settings-btn" onclick="toggleAdminLogin()">⚙️</button>
+  </header>
+  <div class="container" id="shop"></div>
   <div class="modal" id="modal">
     <div class="modal-content" id="modal-content">
       <p id="modal-text">Waiting for seller to confirm proof of purchase...</p>
     </div>
   </div>
 
+  <div class="modal" id="adminModal">
+    <div class="modal-content">
+      <h3>Admin Login</h3>
+      <div class="admin-login" id="adminLogin">
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="loginAdmin()">Login</button>
+      </div>
+      <div id="adminMessage"></div>
+    </div>
+  </div>
+
+  <div class="admin-panel" id="adminPanel">
+    <h3>Admin Panel</h3>
+    <p>Total Sales: $<span id="totalSales">0.00</span></p>
+    <div id="purchaseRequests"></div>
+  </div>
+
   <script>
     const items = [
-      { name: 'Hot Cheetos', price: '$2.50' },
-      { name: 'Mountain Dew', price: '$1.75' },
-      { name: 'Twix', price: '$1.25' },
-      { name: 'Red Bull', price: '$3.00' },
-      { name: 'Takis', price: '$2.75' },
-      { name: 'Pepsi', price: '$1.50' },
-      { name: 'Gummy Worms', price: '$1.00' },
-      { name: 'KitKat', price: '$1.30' },
-      { name: 'Water Bottle', price: '$1.00' },
-      { name: 'Random Snack', price: '$2.00' },
-      { name: 'Energy Shot', price: '$2.99' },
+      { name: 'Hot Cheetos', price: 2.5 },
+      { name: 'Mountain Dew', price: 1.75 },
+      { name: 'Twix', price: 1.25 },
+      { name: 'Red Bull', price: 3.00 },
+      { name: 'Takis', price: 2.75 },
+      { name: 'Pepsi', price: 1.50 },
+      { name: 'Gummy Worms', price: 1.00 },
+      { name: 'KitKat', price: 1.30 },
+      { name: 'Water Bottle', price: 1.00 },
+      { name: 'Random Snack', price: 2.00 },
+      { name: 'Energy Shot', price: 2.99 },
     ];
+
+    let totalSales = 0;
+    let isAdmin = false;
 
     const shop = document.getElementById('shop');
     const modal = document.getElementById('modal');
     const modalContent = document.getElementById('modal-content');
     const modalText = document.getElementById('modal-text');
+    const adminModal = document.getElementById('adminModal');
+    const adminLogin = document.getElementById('adminLogin');
+    const adminMessage = document.getElementById('adminMessage');
+    const adminPanel = document.getElementById('adminPanel');
+    const totalSalesSpan = document.getElementById('totalSales');
+    const purchaseRequests = document.getElementById('purchaseRequests');
 
     items.forEach(item => {
       const div = document.createElement('div');
       div.className = 'item';
-      div.innerHTML = `<h3>${item.name}</h3><p>${item.price}</p>`;
+      div.innerHTML = `<h3>${item.name}</h3><p>$${item.price.toFixed(2)}</p>`;
       div.onclick = () => {
+        if (isAdmin) {
+          alert('Admins can’t buy.');
+          return;
+        }
         modal.style.display = 'flex';
         modalText.textContent = 'Waiting for seller to confirm proof of purchase...';
 
-        setTimeout(() => {
-          modalContent.innerHTML = `
-            <p>Purchase confirmed for <strong>${item.name}</strong> - ${item.price}</p>
-            <p>Select a tip amount:</p>
-            <div class="tip-options">
-              <button onclick="thankUser(20)">Tip 20%</button>
-              <button onclick="thankUser(30)">Tip 30%</button>
-              <button onclick="thankUser(50)">Tip 50%</button>
-            </div>
-          `;
-        }, 2000);
+        const request = document.createElement('div');
+        request.innerHTML = `
+          <p><strong>${item.name}</strong> - $${item.price.toFixed(2)}</p>
+          <button onclick="confirmPurchase(${item.price})">Confirm Purchase</button>
+        `;
+        purchaseRequests.appendChild(request);
       };
       shop.appendChild(div);
     });
+
+    function confirmPurchase(amount) {
+      totalSales += amount;
+      totalSalesSpan.textContent = totalSales.toFixed(2);
+      modalContent.innerHTML = `
+        <p>Purchase confirmed!</p>
+        <p>Select a tip amount:</p>
+        <div class="tip-options">
+          <button onclick="thankUser(20)">Tip 20%</button>
+          <button onclick="thankUser(30)">Tip 30%</button>
+          <button onclick="thankUser(50)">Tip 50%</button>
+        </div>
+      `;
+      modal.style.display = 'flex';
+    }
 
     function thankUser(tip) {
       modalContent.innerHTML = `
@@ -139,8 +227,28 @@
       `;
     }
 
+    function toggleAdminLogin() {
+      adminModal.style.display = 'flex';
+      adminLogin.style.display = 'flex';
+      adminMessage.innerHTML = '';
+    }
+
+    function loginAdmin() {
+      const user = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+      if (user === 'admin' && pass === 'diddy') {
+        adminMessage.innerHTML = '<p style="color: green;">✅ Logged in as Admin</p>';
+        adminLogin.style.display = 'none';
+        isAdmin = true;
+        adminPanel.style.display = 'block';
+      } else {
+        adminMessage.innerHTML = '<p style="color: red;">❌ Incorrect credentials</p>';
+      }
+    }
+
     window.onclick = function(e) {
       if (e.target === modal) modal.style.display = 'none';
+      if (e.target === adminModal) adminModal.style.display = 'none';
     };
   </script>
 </body>
