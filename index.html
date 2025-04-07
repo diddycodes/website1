@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🥢 Fancy Snack Shop 🍡</title>
+  <title>Fancy Snack Shop</title>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #fff5eb, #e8f9f1);
+      background: linear-gradient(135deg, #ffe8e8, #e0f7ff);
       color: #333;
     }
     header {
@@ -126,7 +126,7 @@
 </head>
 <body>
   <header>
-    🥢 Fancy Snack Shop 🍡
+    🍿 Fancy Snack & Drink Shop 🥤
     <button class="settings-btn" onclick="toggleAdminLogin()">⚙️</button>
   </header>
   <div class="container" id="shop"></div>
@@ -156,16 +156,17 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyAwrXlL0oaON4pE4Ko9LEZsBj1PI5YqtkM",
+      authDomain: "website-4f366.firebaseapp.com",
+      databaseURL: "https://website-4f366-default-rtdb.firebaseio.com",
+      projectId: "website-4f366",
+      storageBucket: "website-4f366.firebasestorage.app",
+      messagingSenderId: "915291737784",
+      appId: "1:915291737784:web:5f5b0a2803f29d299d6e4d",
+      measurementId: "G-GSTM5TR39X"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -199,28 +200,38 @@
     const totalSalesSpan = document.getElementById('totalSales');
     const purchaseRequests = document.getElementById('purchaseRequests');
 
-    items.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'item';
-      div.innerHTML = `<h3>${item.name}</h3><p>$${item.price.toFixed(2)}</p>`;
-      div.onclick = () => {
-        if (isAdmin) return alert('Admins can’t buy.');
-        modal.style.display = 'flex';
-        modalText.textContent = 'Waiting for seller to confirm proof of purchase...';
-
-        const newRequest = push(ref(db, 'requests'));
-        set(newRequest, {
-          name: item.name,
-          price: item.price
-        });
+    window.sendPurchaseRequest = (itemName, price) => {
+      const request = {
+        item: itemName,
+        price: price,
+        confirmed: false,
+        timestamp: Date.now()
       };
-      shop.appendChild(div);
-    });
+      push(ref(db, 'purchaseRequests'), request);
+      modal.style.display = 'flex';
+      modalText.textContent = 'Waiting for seller to confirm proof of purchase...';
+    };
 
-    function confirmPurchase(key, amount) {
+    window.listenForAdmin = () => {
+      const requestsRef = ref(db, 'purchaseRequests');
+      onChildAdded(requestsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data.confirmed) {
+          const div = document.createElement('div');
+          div.innerHTML = `
+            <p><strong>${data.item}</strong> - $${data.price}</p>
+            <button onclick="confirmPurchase('${snapshot.key}', ${data.price})">Confirm</button>
+          `;
+          purchaseRequests.appendChild(div);
+        }
+      });
+    };
+
+    window.confirmPurchase = (key, amount) => {
+      const requestRef = ref(db, `purchaseRequests/${key}`);
+      update(requestRef, { confirmed: true });
       totalSales += amount;
       totalSalesSpan.textContent = totalSales.toFixed(2);
-      remove(ref(db, 'requests/' + key));
       modalContent.innerHTML = `
         <p>Purchase confirmed!</p>
         <p>Select a tip amount:</p>
@@ -231,22 +242,22 @@
         </div>
       `;
       modal.style.display = 'flex';
-    }
+    };
 
-    window.thankUser = function(tip) {
+    window.thankUser = (tip) => {
       modalContent.innerHTML = `
         <p>Thanks for buying and tipping <strong>${tip}%</strong>! 🎉</p>
         <button onclick="modal.style.display='none'" style="margin-top:20px; padding:10px 20px; background:#4CAF50; color:white; border:none; border-radius:8px; cursor:pointer;">Close</button>
       `;
     };
 
-    function toggleAdminLogin() {
+    window.toggleAdminLogin = function() {
       adminModal.style.display = 'flex';
       adminLogin.style.display = 'flex';
       adminMessage.innerHTML = '';
-    }
+    };
 
-    function loginAdmin() {
+    window.loginAdmin = function() {
       const user = document.getElementById('username').value;
       const pass = document.getElementById('password').value;
       if (user === 'admin' && pass === 'diddy') {
@@ -254,24 +265,25 @@
         adminLogin.style.display = 'none';
         isAdmin = true;
         adminPanel.style.display = 'block';
-        listenForRequests();
+        listenForAdmin();
       } else {
         adminMessage.innerHTML = '<p style="color: red;">❌ Incorrect credentials</p>';
       }
-    }
+    };
 
-    function listenForRequests() {
-      const reqRef = ref(db, 'requests');
-      onValue(reqRef, snapshot => {
-        purchaseRequests.innerHTML = '';
-        snapshot.forEach(child => {
-          const data = child.val();
-          const div = document.createElement('div');
-          div.innerHTML = `<p><strong>${data.name}</strong> - $${data.price.toFixed(2)} <button onclick="confirmPurchase('${child.key}', ${data.price})">Confirm Purchase</button></p>`;
-          purchaseRequests.appendChild(div);
-        });
-      });
-    }
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `<h3>${item.name}</h3><p>$${item.price.toFixed(2)}</p>`;
+      div.onclick = () => {
+        if (isAdmin) {
+          alert('Admins can’t buy.');
+          return;
+        }
+        sendPurchaseRequest(item.name, item.price);
+      };
+      shop.appendChild(div);
+    });
 
     window.onclick = function(e) {
       if (e.target === modal) modal.style.display = 'none';
