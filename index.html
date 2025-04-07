@@ -204,6 +204,8 @@
     const totalSalesSpan = document.getElementById('totalSales');
     const purchaseRequests = document.getElementById('purchaseRequests');
 
+    let currentPurchaseKey = null;
+
     window.sendPurchaseRequest = (itemName, price) => {
       const request = {
         item: itemName,
@@ -211,7 +213,8 @@
         confirmed: false,
         timestamp: Date.now()
       };
-      push(ref(db, 'purchaseRequests'), request);
+      const newRequestRef = push(ref(db, 'purchaseRequests'), request);
+      currentPurchaseKey = newRequestRef.key;
       modal.style.display = 'flex';
       modalText.textContent = 'Waiting for seller to confirm proof of purchase...';
     };
@@ -237,9 +240,12 @@
       totalSales += amount;
       totalSalesSpan.textContent = totalSales.toFixed(2);
       
-      // Show tips for buyer, not the admin
+      // Hide the modal after confirming
+      modal.style.display = 'none';
+
+      // Show the tip options for the buyer (not the admin)
       modalContent.innerHTML = `
-        <p>Purchase confirmed!</p>
+        <p>Thank you for your purchase!</p>
         <p>Select a tip amount:</p>
         <div class="tip-options">
           <button onclick="thankUser(20)">Tip 20%</button>
@@ -247,7 +253,9 @@
           <button onclick="thankUser(50)">Tip 50%</button>
         </div>
       `;
-      modalText.textContent = "Thank you for your purchase! Please select a tip amount.";
+      modalText.textContent = "Please select a tip amount.";
+
+      currentPurchaseKey = null;
     };
 
     window.thankUser = (tip) => {
@@ -268,6 +276,7 @@
       const pass = document.getElementById('password').value;
       if (user === 'admin' && pass === 'diddy') {
         adminMessage.innerHTML = '<p style="color: green;">✅ Logged in as Admin</p>';
+        setTimeout(() => { adminMessage.innerHTML = ''; }, 3000);  // Message disappears after 3 seconds
         adminLogin.style.display = 'none';
         isAdmin = true;
         adminPanel.style.display = 'block';
