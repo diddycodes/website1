@@ -11,7 +11,6 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #ffe8e8, #e0f7ff);
       color: #333;
-      overflow-x: hidden;
     }
     header {
       background-color: #ff5e78;
@@ -37,17 +36,9 @@
     .settings-btn:hover {
       opacity: 1;
     }
-    .bell {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      font-size: 1.2rem;
-      cursor: pointer;
-      color: white;
-    }
     .container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 20px;
       padding: 30px;
     }
@@ -61,7 +52,8 @@
       animation: fadeIn 0.5s ease-in;
     }
     .item:hover {
-      transform: scale(1.05);
+      transform: translateY(-8px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
     }
     .item h3 { margin: 0; font-size: 1.2rem; }
     .item p { margin: 5px 0 0; color: #888; }
@@ -126,37 +118,18 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       margin: 20px;
     }
-    .confirm-btn {
-      padding: 8px 16px;
-      margin-top: 5px;
-      border: none;
-      background-color: #28a745;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-    .confirm-btn:hover {
-      background-color: #218838;
-    }
-    #notificationLog {
-      display: none;
-      background: white;
-      padding: 10px;
-      margin: 10px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
     @media (max-width: 600px) {
       header { font-size: 1.5rem; }
       .item h3 { font-size: 1rem; }
+      .item p { font-size: 0.9rem; }
+      .modal-content { width: 90%; }
+      .settings-btn { font-size: 0.7rem; }
     }
   </style>
 </head>
 <body>
   <header>
     🍿 Fancy Snack & Drink Shop 🥤
-    <span class="bell" onclick="toggleNotifications()">🔔</span>
     <button class="settings-btn" onclick="toggleAdminLogin()">⚙️</button>
   </header>
   <div class="container" id="shop"></div>
@@ -165,6 +138,7 @@
       <p id="modal-text">Waiting for seller to confirm proof of purchase...</p>
     </div>
   </div>
+
   <div class="modal" id="adminModal">
     <div class="modal-content">
       <h3>Admin Login</h3>
@@ -176,16 +150,17 @@
       <div id="adminMessage"></div>
     </div>
   </div>
+
   <div class="admin-panel" id="adminPanel">
     <h3>Admin Panel</h3>
     <p>Total Sales: $<span id="totalSales">0.00</span></p>
     <div id="purchaseRequests"></div>
-    <div id="notificationLog"></div>
+    <button onclick="clearAllRequests()">Clear All</button>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, update, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAwrXlL0oaON4pE4Ko9LEZsBj1PI5YqtkM",
@@ -201,7 +176,20 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const items = [...]; // same as before
+    const items = [
+      { name: 'Hot Cheetos', price: 2.5 },
+      { name: 'Mountain Dew', price: 1.75 },
+      { name: 'Twix', price: 1.25 },
+      { name: 'Red Bull', price: 3.00 },
+      { name: 'Takis', price: 2.75 },
+      { name: 'Pepsi', price: 1.50 },
+      { name: 'Gummy Worms', price: 1.00 },
+      { name: 'KitKat', price: 1.30 },
+      { name: 'Water Bottle', price: 1.00 },
+      { name: 'Random Snack', price: 2.00 },
+      { name: 'Energy Shot', price: 2.99 }
+    ];
+
     let totalSales = 0;
     let isAdmin = false;
 
@@ -215,7 +203,6 @@
     const adminPanel = document.getElementById('adminPanel');
     const totalSalesSpan = document.getElementById('totalSales');
     const purchaseRequests = document.getElementById('purchaseRequests');
-    const notificationLog = document.getElementById('notificationLog');
 
     window.sendPurchaseRequest = (itemName, price) => {
       const request = {
@@ -233,13 +220,11 @@
       const requestsRef = ref(db, 'purchaseRequests');
       onChildAdded(requestsRef, (snapshot) => {
         const data = snapshot.val();
-        const key = snapshot.key;
         if (!data.confirmed) {
           const div = document.createElement('div');
-          div.id = `request-${key}`;
           div.innerHTML = `
             <p><strong>${data.item}</strong> - $${data.price}</p>
-            <button class="confirm-btn" onclick="confirmPurchase('${key}', ${data.price})">Confirm</button>
+            <button onclick="confirmPurchase('${snapshot.key}', ${data.price})">Confirm</button>
           `;
           purchaseRequests.appendChild(div);
         }
@@ -251,15 +236,23 @@
       update(requestRef, { confirmed: true });
       totalSales += amount;
       totalSalesSpan.textContent = totalSales.toFixed(2);
-      const confirmedEl = document.getElementById(`request-${key}`);
-      if (confirmedEl) confirmedEl.remove();
-
-      const log = document.createElement('p');
-      log.textContent = `✅ Confirmed: $${amount}`;
-      notificationLog.appendChild(log);
-
-      modalContent.innerHTML = `<p>Purchase confirmed and saved. ✅</p>`;
+      modalContent.innerHTML = `
+        <p>Purchase confirmed!</p>
+        <p>Select a tip amount:</p>
+        <div class="tip-options">
+          <button onclick="thankUser(20)">Tip 20%</button>
+          <button onclick="thankUser(30)">Tip 30%</button>
+          <button onclick="thankUser(50)">Tip 50%</button>
+        </div>
+      `;
       modal.style.display = 'flex';
+    };
+
+    window.thankUser = (tip) => {
+      modalContent.innerHTML = `
+        <p>Thanks for buying and tipping <strong>${tip}%</strong>! 🎉</p>
+        <button onclick="modal.style.display='none'" style="margin-top:20px; padding:10px 20px; background:#4CAF50; color:white; border:none; border-radius:8px; cursor:pointer;">Close</button>
+      `;
     };
 
     window.toggleAdminLogin = function() {
@@ -282,8 +275,10 @@
       }
     };
 
-    window.toggleNotifications = function() {
-      notificationLog.style.display = notificationLog.style.display === 'block' ? 'none' : 'block';
+    window.clearAllRequests = () => {
+      const requestsRef = ref(db, 'purchaseRequests');
+      remove(requestsRef);
+      purchaseRequests.innerHTML = '';
     };
 
     items.forEach(item => {
@@ -307,4 +302,3 @@
   </script>
 </body>
 </html>
-
