@@ -236,6 +236,8 @@
       update(requestRef, { confirmed: true });
       totalSales += amount;
       totalSalesSpan.textContent = totalSales.toFixed(2);
+      
+      // Show tips for buyer, not the admin
       modalContent.innerHTML = `
         <p>Purchase confirmed!</p>
         <p>Select a tip amount:</p>
@@ -245,7 +247,7 @@
           <button onclick="thankUser(50)">Tip 50%</button>
         </div>
       `;
-      modal.style.display = 'flex';
+      modalText.textContent = "Thank you for your purchase! Please select a tip amount.";
     };
 
     window.thankUser = (tip) => {
