@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Fancy Snack Shop</title>
   <style>
-    /* Basic Styles */
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       background-color: #121212;
       color: white;
       margin: 0;
@@ -50,24 +49,25 @@
     }
     .modal {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.7);
       display: none;
       align-items: center;
       justify-content: center;
+      z-index: 1000;
     }
     .modal-content {
       background: #1e1e1e;
       padding: 30px;
       border-radius: 10px;
       text-align: center;
-      width: 80%;
+      width: 90%;
+      max-width: 400px;
     }
     .modal button {
       padding: 10px 20px;
+      margin: 10px 5px;
       background: #4CAF50;
       color: white;
       border: none;
@@ -94,6 +94,18 @@
       border-radius: 8px;
       cursor: pointer;
     }
+    .purchase-request {
+      background: #2a2a2a;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .purchase-request button {
+      background: #f44336;
+    }
     @keyframes fadeIn {
       0% { opacity: 0; }
       100% { opacity: 1; }
@@ -106,53 +118,28 @@
     <button class="settings-btn" onclick="toggleAdminLogin()">⚙️</button>
   </header>
 
-  <div class="container" id="shop">
-    <!-- Snacks will be displayed here -->
-    <div class="item" onclick="sendPurchaseRequest('Hot Cheetos', 2.5)">
-      <h3>Hot Cheetos</h3>
-      <p>$2.50</p>
-    </div>
-    <div class="item" onclick="sendPurchaseRequest('Mountain Dew', 1.75)">
-      <h3>Mountain Dew</h3>
-      <p>$1.75</p>
-    </div>
-    <div class="item" onclick="sendPurchaseRequest('Twix', 1.25)">
-      <h3>Twix</h3>
-      <p>$1.25</p>
-    </div>
-    <div class="item" onclick="sendPurchaseRequest('Red Bull', 3.00)">
-      <h3>Red Bull</h3>
-      <p>$3.00</p>
-    </div>
-    <div class="item" onclick="sendPurchaseRequest('Takis', 2.75)">
-      <h3>Takis</h3>
-      <p>$2.75</p>
-    </div>
-    <div class="item" onclick="sendPurchaseRequest('Pepsi', 1.50)">
-      <h3>Pepsi</h3>
-      <p>$1.50</p>
-    </div>
-  </div>
+  <div class="container" id="shop"></div>
 
-  <!-- Modal for payment selection -->
+  <!-- Purchase Modal -->
   <div class="modal" id="modal">
     <div class="modal-content">
-      <p id="modal-text">Please choose a payment method:</p>
+      <p id="modal-text"></p>
       <button onclick="showPayment('paypal')">Pay with PayPal</button>
       <button onclick="showPayment('cashapp')">Pay with CashApp</button>
       <button onclick="showPayment('applepay')">Pay with Apple Pay</button>
+      <button onclick="confirmPurchase()">Done</button>
       <button onclick="closeModal()">Close</button>
     </div>
   </div>
 
-  <!-- PayPal Instructions Modal -->
-  <div class="modal" id="paypalModal">
+  <!-- Dynamic Payment Modal -->
+  <div class="modal" id="paymentModal">
     <div class="modal-content">
-      <h3>PayPal Payment</h3>
-      <p>Send payment to: <strong>kailanpacheco70@gmail.com</strong></p>
-      <button onclick="copyToClipboard('kailanpacheco70@gmail.com')">Copy PayPal Email</button>
-      <a href="https://paypal.com" target="_blank" style="color: #4CAF50;">Pay via PayPal</a>
-      <button onclick="closePaypalModal()">Close</button>
+      <h3 id="paymentTitle"></h3>
+      <p id="paymentText"></p>
+      <button id="copyBtn">Copy Info</button>
+      <a id="paymentLink" href="#" target="_blank" style="color: #4CAF50;">Pay Now</a>
+      <button onclick="closePaymentModal()">Close</button>
     </div>
   </div>
 
@@ -175,65 +162,130 @@
     <button onclick="clearAllRequests()">Clear All</button>
   </div>
 
-  <script type="text/javascript">
-    let totalSales = 0;
+  <script>
+    const snacks = [
+      { name: "Hot Cheetos", price: 2.5 },
+      { name: "Mountain Dew", price: 1.75 },
+      { name: "Twix", price: 1.25 },
+      { name: "Red Bull", price: 3.0 },
+      { name: "Takis", price: 2.75 },
+      { name: "Pepsi", price: 1.5 },
+      { name: "Gushers", price: 2.0 },
+      { name: "Kit Kat", price: 1.5 },
+      { name: "Arizona Tea", price: 1.0 },
+      { name: "Snickers", price: 1.25 },
+    ];
+
+    let totalSales = parseFloat(localStorage.getItem("fancyShopTotalSales")) || 0;
     let isAdmin = false;
-    let currentPurchaseKey = null;
+    let currentItem = null;
 
-    // Display snack items and handle purchase requests
-    function sendPurchaseRequest(itemName, price) {
-      currentPurchaseKey = Date.now();
-      document.getElementById('modal-text').textContent = `You are purchasing ${itemName} for $${price}.`;
-      document.getElementById('modal').style.display = 'flex';
-    }
-
-    // Show payment modal with selected payment method
-    function showPayment(paymentMethod) {
-      if (paymentMethod === 'paypal') {
-        document.getElementById('paypalModal').style.display = 'flex';
-      } else {
-        alert('Payment method coming soon!');
+    const paymentMethods = {
+      paypal: {
+        info: "kailanpacheco70@gmail.com",
+        instructions: "Send payment to: kailanpacheco70@gmail.com",
+        link: "https://paypal.com"
+      },
+      cashapp: {
+        info: "$FancySnacks123",
+        instructions: "Send payment to: $FancySnacks123",
+        link: "https://cash.app"
+      },
+      applepay: {
+        info: "(123) 456-7890",
+        instructions: "Send payment to: (123) 456-7890",
+        link: "#"
       }
+    };
+
+    function renderShop() {
+      const shop = document.getElementById("shop");
+      snacks.forEach(snack => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `<h3>${snack.name}</h3><p>$${snack.price.toFixed(2)}</p>`;
+        div.onclick = () => openModal(snack);
+        shop.appendChild(div);
+      });
     }
 
-    // Copy PayPal email to clipboard
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text);
-      alert('PayPal email copied!');
+    function openModal(snack) {
+      currentItem = snack;
+      document.getElementById("modal-text").textContent = `You are purchasing ${snack.name} for $${snack.price.toFixed(2)}.`;
+      document.getElementById("modal").style.display = "flex";
     }
 
-    // Close modals
     function closeModal() {
-      document.getElementById('modal').style.display = 'none';
+      document.getElementById("modal").style.display = "none";
     }
 
-    function closePaypalModal() {
-      document.getElementById('paypalModal').style.display = 'none';
+    function showPayment(method) {
+      const m = paymentMethods[method];
+      document.getElementById("paymentTitle").textContent = `${method.toUpperCase()} Payment`;
+      document.getElementById("paymentText").textContent = m.instructions;
+      document.getElementById("paymentLink").href = m.link;
+      document.getElementById("copyBtn").onclick = () => {
+        navigator.clipboard.writeText(m.info);
+        alert(`${method} info copied!`);
+      };
+      document.getElementById("paymentModal").style.display = "flex";
     }
 
-    // Admin login functionality
+    function closePaymentModal() {
+      document.getElementById("paymentModal").style.display = "none";
+    }
+
+    function confirmPurchase() {
+      if (!currentItem) return;
+      totalSales += currentItem.price;
+      localStorage.setItem("fancyShopTotalSales", totalSales);
+      document.getElementById("totalSales").textContent = totalSales.toFixed(2);
+
+      if (isAdmin) {
+        const msg = document.createElement("div");
+        msg.className = "purchase-request";
+        msg.innerHTML = `<span>${currentItem.name} - $${currentItem.price.toFixed(2)}</span><button onclick="this.parentElement.remove()">✔️</button>`;
+        document.getElementById("purchaseRequests").appendChild(msg);
+      } else {
+        alert("Confirmation sent to admin!");
+      }
+
+      closeModal();
+    }
+
     function toggleAdminLogin() {
-      document.getElementById('adminModal').style.display = 'flex';
+      document.getElementById("adminModal").style.display = "flex";
     }
 
     function loginAdmin() {
-      const user = document.getElementById('username').value;
-      const pass = document.getElementById('password').value;
-      if (user === 'admin' && pass === 'diddy') {
-        document.getElementById('adminMessage').innerHTML = '<p style="color: green;">✅ Logged in as Admin</p>';
+      const user = document.getElementById("username").value;
+      const pass = document.getElementById("password").value;
+      if (user === "admin" && pass === "diddy") {
         isAdmin = true;
-        document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('adminModal').style.display = 'none';
+        document.getElementById("adminPanel").style.display = "block";
+        document.getElementById("adminModal").style.display = "none";
+        document.getElementById("totalSales").textContent = totalSales.toFixed(2);
+        document.getElementById("adminMessage").innerHTML = "";
       } else {
-        document.getElementById('adminMessage').innerHTML = '<p style="color: red;">❌ Incorrect credentials</p>';
+        document.getElementById("adminMessage").innerHTML = "<p style='color:red;'>❌ Incorrect credentials</p>";
       }
     }
 
-    // Clear all purchase requests
     function clearAllRequests() {
-      alert('All requests cleared!');
-      // Here we would clear requests from a backend or database
+      document.getElementById("purchaseRequests").innerHTML = "";
     }
+
+    window.onclick = function(event) {
+      ["modal", "adminModal", "paymentModal"].forEach(id => {
+        const el = document.getElementById(id);
+        if (event.target === el) el.style.display = "none";
+      });
+    };
+
+    window.onload = () => {
+      renderShop();
+      document.getElementById("totalSales").textContent = totalSales.toFixed(2);
+    };
   </script>
 </body>
 </html>
