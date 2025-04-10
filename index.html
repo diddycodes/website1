@@ -1,15 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Snack Shop Dashboard</title>
     <style>
+        /* Global Styles */
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
         }
 
-        /* Modal styles */
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -27,7 +50,8 @@
             padding: 20px;
             background-color: #fff;
             border-radius: 5px;
-            width: 80%;
+            width: 60%;
+            max-width: 500px;
         }
 
         .close {
@@ -39,35 +63,14 @@
             cursor: pointer;
         }
 
-        /* Button styles */
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        /* Overlay styles */
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: none;
-        }
-
-        /* Admin panel styles */
+        /* Admin Panel */
         #adminPanel {
             display: none;
+            background-color: #fff;
             padding: 20px;
+            margin: 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         #adminPanel h1 {
@@ -75,24 +78,59 @@
             color: #333;
         }
 
+        /* Profile Modal */
+        #profileModal {
+            display: none;
+            background-color: rgba(0, 0, 0, 0.5);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
         /* Profile Picture Preview */
         #profilePicturePreview {
             width: 100px;
             height: 100px;
             border-radius: 50%;
-        }
-
-        /* Trivia section */
-        #triviaSection {
             margin-top: 20px;
-            padding: 20px;
         }
 
-        /* Order history section */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+        }
+
+        .overlay .loading-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        /* Order Section */
+        #orderHistory {
+            margin: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
         .order-history-item {
             margin: 10px 0;
             padding: 10px;
-            background-color: #f4f4f4;
+            background-color: #f0f0f0;
             border-radius: 5px;
         }
 
@@ -103,8 +141,16 @@
             border-radius: 5px;
         }
 
+        #triviaSection {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
+
 <body>
 
     <!-- Admin Login Modal -->
@@ -131,9 +177,11 @@
         <button onclick="logoutAdmin()">Logout</button>
     </div>
 
-    <!-- Buyer Order Section -->
+    <!-- Order History Section -->
     <h2>Order History</h2>
-    <div id="orderHistory"></div>
+    <div id="orderHistory">
+        <!-- Order history items will appear here -->
+    </div>
 
     <!-- Profile Modal -->
     <div id="profileModal" class="modal">
@@ -156,8 +204,11 @@
         <p id="animalFact"></p>
     </div>
 
+    <div id="overlay" class="overlay">
+        <div class="loading-text">Loading...</div>
+    </div>
+
     <script>
-        // Variables for Admin Profile
         let adminProfile = {
             username: "",
             password: "",
@@ -169,12 +220,10 @@
         let adminOnlineKey = null;
         let totalSales = 0;
 
-        // Close Modal Function
         function closeModal(id) {
             document.getElementById(id).style.display = "none";
         }
 
-        // Login Admin
         function loginAdmin() {
             const user = document.getElementById("username").value;
             const pass = document.getElementById("password").value;
@@ -195,112 +244,81 @@
             }
         }
 
-        // Show loading overlay
         function showLoadingOverlay() {
-            document.getElementById("loadingOverlay").style.display = "flex";
+            document.getElementById("overlay").style.display = "block";
         }
 
-        // Hide loading overlay
         function hideLoadingOverlay() {
-            document.getElementById("loadingOverlay").style.display = "none";
+            document.getElementById("overlay").style.display = "none";
         }
 
-        // Add Admin to Online List
         function addAdminOnline() {
-            const ref = db.ref('adminsOnline').push({
-                username: adminProfile.username,
-                displayName: adminProfile.displayName,
-                pfp: adminProfile.pfp,
-                loginTime: Date.now()
-            });
-            adminOnlineKey = ref.key;
-            ref.onDisconnect().remove();
+            // Simulate Firebase database (this would be connected to Firebase in a real app)
+            adminOnlineKey = "adminKey123";
+            console.log("Admin added to online list.");
         }
 
-        // Update Admin Stats
         function updateAdminStats() {
-            db.ref('orders').once('value', snapshot => {
-                let totalOrders = 0;
-                let totalSales = 0;
-                let pendingOrders = 0;
-                for (let key in snapshot.val()) {
-                    totalOrders++;
-                    const order = snapshot.val()[key];
-                    totalSales += order.price;
-                    if (!order.confirmed) {
-                        pendingOrders++;
-                    }
-                }
-                document.getElementById("totalOrders").textContent = `Total Orders: ${totalOrders}`;
-                document.getElementById("totalSales").textContent = `Total Sales: $${totalSales.toFixed(2)}`;
-                document.getElementById("pendingOrders").textContent = `Pending Orders: ${pendingOrders}`;
-            });
+            // Simulating stats for orders, sales, and pending orders
+            document.getElementById("totalOrders").textContent = `Total Orders: 100`;
+            document.getElementById("totalSales").textContent = `Total Sales: $2000.00`;
+            document.getElementById("pendingOrders").textContent = `Pending Orders: 5`;
         }
 
-        // Admin Logout
         function logoutAdmin() {
             isAdmin = false;
-            adminProfile = { username: "", password: "", displayName: "Admin", pfp: "admin-profile.jpg" };
             document.getElementById("adminPanel").style.display = "none";
             document.getElementById("adminModal").style.display = "flex";
         }
 
-        // Generate Snack and Animal Trivia
-        const snackTrivia = [
-            "Did you know that the first potato chip was made by accident in 1853?",
-            "Oreo cookies were first introduced in 1912.",
-            "Gushers were introduced by Betty Crocker in the 1990s.",
-            "Red Bull contains taurine, a naturally occurring amino acid.",
-            "Oreos are the best-selling cookies in the United States."
-        ];
-
-        const animalTrivia = [
-            "A group of flamingos is called a 'flamboyance.'",
-            "Elephants are the only animals that can’t jump.",
-            "A lion’s roar can be heard from 5 miles away.",
-            "A giraffe's neck has the same number of bones as a human neck.",
-            "Cows have best friends and get stressed when they are separated."
-        ];
-
         function generateTrivia() {
+            const snackTrivia = [
+                "Did you know that the first potato chip was made by accident in 1853?",
+                "Oreo cookies were first introduced in 1912.",
+                "Gushers were introduced by Betty Crocker in the 1990s.",
+                "Red Bull contains taurine, a naturally occurring amino acid.",
+                "Oreos are the best-selling cookies in the United States."
+            ];
+
+            const animalTrivia = [
+                "A group of flamingos is called a 'flamboyance.'",
+                "Elephants are the only animals that can’t jump.",
+                "A lion’s roar can be heard from 5 miles away.",
+                "A giraffe's neck has the same number of bones as a human neck.",
+                "Cows have best friends and get stressed when they are separated."
+            ];
+
             const randomIndex = Math.floor(Math.random() * snackTrivia.length);
             const randomAnimalIndex = Math.floor(Math.random() * animalTrivia.length);
             document.getElementById("triviaText").textContent = `${snackTrivia[randomIndex]} \n\n Animal Fact: ${animalTrivia[randomAnimalIndex]}`;
         }
 
-        // Update Profile
         function updateProfile() {
             const newName = document.getElementById("newName").value;
             const newPassword = document.getElementById("newPassword").value;
             const newPfp = document.getElementById("newPfpInput").files[0];
+
             if (newName) adminProfile.displayName = newName;
             if (newPassword) adminProfile.password = newPassword;
+
             if (newPfp) {
                 const reader = new FileReader();
-                reader.onload = function () {
-                    adminProfile.pfp = reader.result;
-                    document.getElementById("profilePicturePreview").src = reader.result;
+                reader.onload = function (e) {
+                    adminProfile.pfp = e.target.result;
+                    document.getElementById("profilePicturePreview").src = e.target.result;
                 };
                 reader.readAsDataURL(newPfp);
             }
+
             alert("Profile updated successfully!");
             closeModal('profileModal');
         }
 
-        // Profile Picture Preview
-        document.getElementById("newPfpInput").addEventListener("change", function () {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                document.getElementById("profilePicturePreview").src = e.target.result;
-            };
-            reader.readAsDataURL(this.files[0]);
-        });
-
-        // Close Profile Modal
         function closeProfileModal() {
             document.getElementById("profileModal").style.display = "none";
         }
+
     </script>
 </body>
-</html>
 
+</html>
