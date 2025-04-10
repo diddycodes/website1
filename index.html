@@ -1,798 +1,306 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Fancy Snack Shop v4.0 - Buyer & Admin Extended Features -->
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Fancy Snack & Drink Shop v4.0</title>
-<!-- Google Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
-<!-- Firebase App -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<!-- Firebase Realtime Database -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; font-family: 'Roboto', sans-serif; background-color: #121212; color: #fff; }
-header { background-color: #1c1c1c; padding: 20px; text-align: center; font-size: 2.5rem; position: relative; z-index: 100; box-shadow: 0px 5px 10px rgba(0,0,0,0.5); }
-.settings-btn { position: absolute; top: 10px; right: 10px; background: transparent; border: none; font-size: 2rem; color: #fff; cursor: pointer; }
-nav { background: #222; display: flex; justify-content: center; padding: 10px 0; }
-nav a { color: #ccc; text-decoration: none; margin: 0 15px; padding: 8px; transition: color 0.3s ease; }
-nav a:hover { color: #4CAF50; }
-.container { padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; animation: fadeIn 2s ease-in-out; }
-.item { background-color: #333; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.2s ease-in-out, background 0.3s ease; }
-.item:hover { transform: scale(1.05); background-color: #444; }
-.item h3 { margin-bottom: 10px; }
-.item p { font-size: 1.2rem; }
-.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
-.modal-content { background: #1e1e1e; padding: 30px; border-radius: 10px; text-align: center; width: 90%; max-width: 400px; position: relative; animation: popup 0.5s ease-out; }
-.modal button { padding: 10px 20px; margin: 10px 5px; background: #4CAF50; border: none; border-radius: 8px; cursor: pointer; transition: background 0.3s ease; color: white; }
-.modal button:hover { background: #45a049; }
-.loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1100; }
-.loading-overlay .loading-bar { width: 80%; height: 20px; background: #333; border-radius: 10px; overflow: hidden; margin: 20px 0; }
-.loading-overlay .loading-bar-inner { height: 100%; width: 0%; background: #4CAF50; animation: loading 3s linear forwards; }
-@keyframes loading { 0% { width: 0%; } 100% { width: 100%; } }
-.loading-overlay p { font-size: 1.2rem; margin-top: 10px; }
-.admin-panel { display: none; padding: 20px; background: #1c1c1c; border-radius: 10px; margin: 20px; }
-.admin-panel h3 { margin-bottom: 10px; }
-.admin-panel button { padding: 10px 20px; margin-top: 20px; background: #4CAF50; border: none; border-radius: 8px; cursor: pointer; color: #fff; }
-.purchase-request { background: #2a2a2a; padding: 10px; margin: 10px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-.purchase-request button { background: #f44336; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-.admin-profile { display: flex; align-items: center; margin-bottom: 20px; }
-.admin-profile img { width: 60px; height: 60px; border-radius: 50%; margin-right: 15px; }
-.admin-profile .profile-info { font-size: 1.2rem; }
-.online-admins { margin-top: 20px; padding: 10px; background: #222; border-radius: 8px; }
-.online-admins h4 { margin-bottom: 10px; }
-.online-admins ul { list-style: none; }
-.online-admins li { display: flex; align-items: center; margin-bottom: 5px; }
-.online-admins li img { width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; }
-.profile-modal { display: none; }
-.about-section { padding: 40px 20px; background: #1a1a1a; text-align: center; }
-.about-section h2 { margin-bottom: 20px; font-size: 2rem; }
-.about-section p { max-width: 800px; margin: 0 auto; line-height: 1.6; }
-.contact-section { padding: 40px 20px; background: #222; text-align: center; }
-.contact-section h2 { margin-bottom: 20px; font-size: 2rem; }
-.contact-section form { max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; }
-.contact-section input, .contact-section textarea { padding: 10px; margin-bottom: 15px; border: none; border-radius: 5px; font-size: 1rem; }
-.contact-section button { background: #4CAF50; color: white; border: none; padding: 10px; border-radius: 5px; font-size: 1rem; cursor: pointer; }
-.contact-section button:hover { background: #45a049; }
-.trivia-section { padding: 40px 20px; background: #1e1e1e; text-align: center; }
-.trivia-section h2 { margin-bottom: 20px; font-size: 2rem; }
-.trivia-box { background: #333; padding: 20px; border-radius: 10px; margin: 0 auto 20px; max-width: 600px; }
-.trivia-box p { font-size: 1.2rem; }
-.trivia-section button { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-.trivia-section button:hover { background: #45a049; }
-footer { padding: 20px; text-align: center; background: #1c1c1c; font-size: 0.9rem; margin-top: 40px; }
-@keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
-@keyframes popup { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-@media (max-width: 768px) { header { font-size: 2rem; padding: 15px; } nav a { margin: 0 10px; } .container { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); } .modal-content { width: 95%; } .about-section, .contact-section, .trivia-section { padding: 30px 10px; } }
-.animated-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: linear-gradient(45deg, #121212, #1e1e1e, #121212); background-size: 400% 400%; animation: gradient 15s ease infinite; }
-@keyframes gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-.spacer { height: 40px; }
-/* Buyer Order Confirmation Modal */
-.buyer-confirmation-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1050; align-items: center; justify-content: center; }
-.buyer-confirmation-content { background: #1e1e1e; padding: 30px; border-radius: 10px; text-align: center; width: 90%; max-width: 400px; animation: popup 0.5s ease-out; }
-.buyer-confirmation-content img { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 10px; }
-.buyer-confirmation-content h3 { margin-bottom: 10px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snack Shop Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            position: relative;
+            margin: 15% auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            width: 80%;
+        }
+
+        .close {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 30px;
+            color: #000;
+            cursor: pointer;
+        }
+
+        /* Button styles */
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Overlay styles */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+
+        /* Admin panel styles */
+        #adminPanel {
+            display: none;
+            padding: 20px;
+        }
+
+        #adminPanel h1 {
+            font-size: 24px;
+            color: #333;
+        }
+
+        /* Profile Picture Preview */
+        #profilePicturePreview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+        }
+
+        /* Trivia section */
+        #triviaSection {
+            margin-top: 20px;
+            padding: 20px;
+        }
+
+        /* Order history section */
+        .order-history-item {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f4f4f4;
+            border-radius: 5px;
+        }
+
+        .purchase-request {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+        }
+
+    </style>
 </head>
 <body>
-<div class="animated-bg"></div>
-<header>
-  🍿 Fancy Snack & Drink Shop v4.0 🥤
-  <button class="settings-btn" onclick="toggleAdminLogin()">⚙️</button>
-</header>
-<nav>
-  <a href="#shopSection">Shop</a>
-  <a href="#aboutSection">About</a>
-  <a href="#triviaSection">Snack Trivia</a>
-  <a href="#contactSection">Contact</a>
-  <a href="#adminSection" onclick="toggleAdminLogin()">Admin</a>
-</nav>
-<section id="shopSection">
-  <div class="container" id="shop">
-    <!-- Snack items will be rendered here -->
-  </div>
-</section>
-<!-- Purchase Modal (Buyer) -->
-<div class="modal" id="modal">
-  <div class="modal-content">
-    <p id="modal-text"></p>
-    <button onclick="showPayment('paypal')">Pay with PayPal</button>
-    <button onclick="showPayment('cashapp')">Pay with CashApp</button>
-    <button onclick="showPayment('applepay')">Pay with Apple Pay</button>
-    <button onclick="initiateBuyerOrder()">Done</button>
-    <button onclick="closeModal()">Close</button>
-  </div>
-</div>
-<!-- Payment Modal -->
-<div class="modal" id="paymentModal">
-  <div class="modal-content">
-    <h3 id="paymentTitle"></h3>
-    <p id="paymentText"></p>
-    <button id="copyBtn">Copy Info</button>
-    <a id="paymentLink" href="#" target="_blank" style="color:#4CAF50;">Pay Now</a>
-    <button onclick="closePaymentModal()">Close</button>
-  </div>
-</div>
-<!-- Buyer Order Loading Overlay -->
-<div class="loading-overlay" id="buyerLoadingOverlay">
-  <div class="loading-bar">
-    <div class="loading-bar-inner" id="buyerLoadingBar"></div>
-  </div>
-  <p id="buyerLoadingText">Waiting for admin confirmation...</p>
-</div>
-<!-- Buyer Order Confirmation Modal -->
-<div class="modal" id="buyerConfirmationModal">
-  <div class="buyer-confirmation-content">
-    <img id="confirmAdminPfp" src="" alt="Admin Profile Picture" />
-    <h3 id="confirmAdminName"></h3>
-    <p>Your order has been confirmed by the admin above.</p>
-    <button onclick="closeBuyerConfirmationModal()">Close</button>
-  </div>
-</div>
-<!-- Admin Login Modal -->
-<div class="modal" id="adminModal">
-  <div class="modal-content">
-    <h3>Admin Login</h3>
-    <input type="text" id="username" placeholder="Username" />
-    <input type="password" id="password" placeholder="Password" />
-    <button onclick="loginAdmin()">Login</button>
-    <div id="adminMessage"></div>
-  </div>
-</div>
-<!-- Profile Update Modal -->
-<div class="modal profile-modal" id="profileModal">
-  <div class="modal-content">
-    <h3>Update Your Profile</h3>
-    <input type="text" id="newName" placeholder="New Display Name" />
-    <input type="password" id="newPassword" placeholder="New Password" />
-    <input type="text" id="newPfp" placeholder="Profile Picture URL" />
-    <button onclick="updateProfile()">Update Profile</button>
-    <button onclick="closeProfileModal()">Close</button>
-  </div>
-</div>
-<!-- Admin Panel Section -->
-<section id="adminSection">
-  <div class="admin-panel" id="adminPanel">
-    <div class="admin-profile" id="adminProfileSection">
-      <img src="" id="adminPfp" alt="Profile Picture" />
-      <div class="profile-info">
-        <span id="adminDisplayName"></span>
-      </div>
-      <button onclick="openProfileModal()">Edit Profile</button>
+
+    <!-- Admin Login Modal -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('adminModal')">&times;</span>
+            <h2>Admin Login</h2>
+            <input type="text" id="username" placeholder="Username" />
+            <input type="password" id="password" placeholder="Password" />
+            <button onclick="loginAdmin()">Login</button>
+            <p id="adminMessage"></p>
+        </div>
     </div>
-    <p>Total Sales: $<span id="totalSales">0.00</span></p>
-    <h3>Buyer Orders:</h3>
-    <div id="buyerOrders"></div>
-    <h3>Purchase Requests (Admin Confirmations):</h3>
-    <div id="purchaseRequests"></div>
-    <button onclick="clearAllRequests()">Clear All</button>
-    <div class="online-admins" id="onlineAdmins">
-      <h4>Online Admins:</h4>
-      <ul id="onlineAdminsList"></ul>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel">
+        <h1>Admin Dashboard</h1>
+        <div id="totalOrders">Total Orders: 0</div>
+        <div id="totalSales">Total Sales: $0.00</div>
+        <div id="pendingOrders">Pending Orders: 0</div>
+        <ul id="onlineAdminsList"></ul>
+        <div id="buyerOrders"></div>
+        <button onclick="clearAllRequests()">Clear All Orders</button>
+        <button onclick="logoutAdmin()">Logout</button>
     </div>
-  </div>
-</section>
-<!-- About Section -->
-<section id="aboutSection" class="about-section">
-  <h2>About Fancy Snack Shop</h2>
-  <p>Welcome to Fancy Snack & Drink Shop v4.0! Our platform delivers delicious snacks and beverages with realtime admin confirmations. Enjoy our interactive features, animations, and a fun admin/buyer experience!</p>
-</section>
-<!-- Snack Trivia Section -->
-<section id="triviaSection" class="trivia-section">
-  <h2>Snack Trivia</h2>
-  <div class="trivia-box" id="triviaBox">
-    <p id="triviaText">Press the button below to get a random snack trivia fact!</p>
-  </div>
-  <button onclick="generateTrivia()">Generate Trivia</button>
-</section>
-<!-- Contact Section -->
-<section id="contactSection" class="contact-section">
-  <h2>Contact Us</h2>
-  <form onsubmit="submitContactForm(event)">
-    <input type="text" id="contactName" placeholder="Your Name" required />
-    <input type="email" id="contactEmail" placeholder="Your Email" required />
-    <textarea id="contactMessage" rows="5" placeholder="Your Message" required></textarea>
-    <button type="submit">Send Message</button>
-  </form>
-</section>
-<!-- Footer -->
-<footer>
-  &copy; 2025 Fancy Snack Shop. All rights reserved.
-</footer>
-<div class="spacer"></div>
-<script>
-/*******************************************************
- * Firebase Setup & Initialization
- *******************************************************/
-const firebaseConfig = {
-  apiKey: "AIzaSyAwrXlL0oaON4pE4Ko9LEZsBj1PI5YqtkM",
-  authDomain: "website-4f366.firebaseapp.com",
-  databaseURL: "https://website-4f366-default-rtdb.firebaseio.com",
-  projectId: "website-4f366",
-  storageBucket: "website-4f366.appspot.com",
-  messagingSenderId: "915291737784",
-  appId: "1:915291737784:web:5f5b0a2803f29d299d6e4d",
-  measurementId: "G-GSTM5TR39X"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-/*******************************************************
- * Shop Items & Rendering Functions
- *******************************************************/
-const snacks = [
-  { name: "Hot Cheetos", price: 2.5 },
-  { name: "Mountain Dew", price: 1.75 },
-  { name: "Twix", price: 1.25 },
-  { name: "Red Bull", price: 3.0 },
-  { name: "Takis", price: 2.75 },
-  { name: "Pepsi", price: 1.5 },
-  { name: "Gushers", price: 2.0 },
-  { name: "Kit Kat", price: 1.5 },
-  { name: "Arizona Tea", price: 1.0 },
-  { name: "Snickers", price: 1.25 },
-  { name: "Reese's Cups", price: 1.5 },
-  { name: "Oreos", price: 1.75 },
-  { name: "Sprite", price: 1.5 },
-  { name: "Coke", price: 1.5 }
-];
-let totalSales = parseFloat(localStorage.getItem("fancyShopTotalSales")) || 0;
-let currentItem = null;
-let isAdmin = false;
-let buyerOrderKey = null;
-let adminProfile = { username: "", displayName: "Admin", password: "", pfp: "https://via.placeholder.com/60" };
-let adminOnlineKey = null; // For tracking online admin entry
-const paymentMethods = {
-  paypal: { info: "kailanpacheco70@gmail.com", instructions: "Send payment to: kailanpacheco70@gmail.com", link: "https://paypal.com" },
-  cashapp: { info: "$FancySnacks123", instructions: "Send payment to: $FancySnacks123", link: "https://cash.app" },
-  applepay: { info: "(123) 456-7890", instructions: "Send payment to: (123) 456-7890", link: "#" }
-};
-function renderShop() {
-  const shop = document.getElementById("shop");
-  shop.innerHTML = "";
-  snacks.forEach(snack => {
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `<h3>${snack.name}</h3><p>$${snack.price.toFixed(2)}</p>`;
-    div.onclick = () => openModal(snack);
-    shop.appendChild(div);
-  });
-}
-/*******************************************************
- * Modal Functions
- *******************************************************/
-function openModal(snack) {
-  currentItem = snack;
-  document.getElementById("modal-text").textContent = `You are purchasing ${snack.name} for $${snack.price.toFixed(2)}.`;
-  document.getElementById("modal").style.display = "flex";
-}
-function closeModal() { document.getElementById("modal").style.display = "none"; }
-function closePaymentModal() { document.getElementById("paymentModal").style.display = "none"; }
-function showPayment(method) {
-  const m = paymentMethods[method];
-  document.getElementById("paymentTitle").textContent = `${method.toUpperCase()} Payment`;
-  document.getElementById("paymentText").textContent = m.instructions;
-  document.getElementById("paymentLink").href = m.link;
-  document.getElementById("copyBtn").onclick = () => { navigator.clipboard.writeText(m.info); alert(`${method} info copied!`); };
-  document.getElementById("paymentModal").style.display = "flex";
-}
-/*******************************************************
- * Buyer Order Functions & Confirmation Listener
- *******************************************************/
-function initiateBuyerOrder() {
-  if (!currentItem) return;
-  totalSales += currentItem.price;
-  localStorage.setItem("fancyShopTotalSales", totalSales);
-  document.getElementById("totalSales").textContent = totalSales.toFixed(2);
-  // Push order to Firebase under "orders", with confirmed false initially
-  const orderRef = db.ref('orders').push({
-    item: currentItem.name,
-    price: currentItem.price,
-    time: Date.now(),
-    confirmed: false,
-    adminName: "",
-    adminPfp: ""
-  });
-  buyerOrderKey = orderRef.key;
-  // Show buyer loading overlay
-  document.getElementById("buyerLoadingOverlay").style.display = "flex";
-  // Set up listener for this order confirmation
-  listenForOrderConfirmation(buyerOrderKey);
-  closeModal();
-}
-function listenForOrderConfirmation(orderKey) {
-  db.ref('orders/' + orderKey).on('value', snapshot => {
-    const data = snapshot.val();
-    if (data && data.confirmed === true) {
-      // Order confirmed by admin
-      document.getElementById("buyerLoadingOverlay").style.display = "none";
-      // Show buyer confirmation modal with admin details
-      document.getElementById("confirmAdminName").textContent = data.adminName;
-      document.getElementById("confirmAdminPfp").src = data.adminPfp;
-      document.getElementById("buyerConfirmationModal").style.display = "flex";
-      // Remove listener since order confirmed
-      db.ref('orders/' + orderKey).off();
-    }
-  });
-}
-function closeBuyerConfirmationModal() {
-  document.getElementById("buyerConfirmationModal").style.display = "none";
-}
-/*******************************************************
- * Admin Functions: Login, Profile, and Order Confirmations
- *******************************************************/
-function toggleAdminLogin() {
-  const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-  if (isLocal) { alert("Admin access is disabled in the local version."); return; }
-  document.getElementById("adminModal").style.display = "flex";
-}
-function loginAdmin() {
-  const user = document.getElementById("username").value;
-  const pass = document.getElementById("password").value;
-  if (user === "admin" && pass === "diddy") {
-    adminProfile.username = user;
-    adminProfile.password = pass;
-    document.getElementById("adminModal").style.display = "none";
-    showLoadingOverlay();
-    setTimeout(() => {
-      isAdmin = true;
-      document.getElementById("adminPanel").style.display = "block";
-      document.getElementById("totalSales").textContent = totalSales.toFixed(2);
-      document.getElementById("adminMessage").innerHTML = "";
-      setAdminProfileUI();
-      addAdminOnline();
-      listenForOrdersForAdmin();
-      listenForOnlineAdmins();
-      hideLoadingOverlay();
-    }, 3000);
-  } else {
-    document.getElementById("adminMessage").innerHTML = "<p style='color:red;'>❌ Incorrect credentials</p>";
-  }
-}
-function showLoadingOverlay() { document.getElementById("loadingOverlay").style.display = "flex"; }
-function hideLoadingOverlay() { document.getElementById("loadingOverlay").style.display = "none"; }
-function setAdminProfileUI() {
-  document.getElementById("adminDisplayName").textContent = adminProfile.displayName;
-  document.getElementById("adminPfp").src = adminProfile.pfp;
-}
-function addAdminOnline() {
-  const ref = db.ref('adminsOnline').push({
-    username: adminProfile.username,
-    displayName: adminProfile.displayName,
-    pfp: adminProfile.pfp,
-    loginTime: Date.now()
-  });
-  adminOnlineKey = ref.key;
-  ref.onDisconnect().remove();
-}
-function listenForOnlineAdmins() {
-  db.ref('adminsOnline').on('value', snapshot => {
-    const data = snapshot.val();
-    const list = document.getElementById("onlineAdminsList");
-    list.innerHTML = "";
-    for (let key in data) {
-      const li = document.createElement("li");
-      li.innerHTML = `<img src="${data[key].pfp}" alt="pfp"><span>${data[key].displayName}</span>`;
-      list.appendChild(li);
-    }
-  });
-}
-/* Admin Profile Update */
-function openProfileModal() { document.getElementById("profileModal").style.display = "flex"; }
-function closeProfileModal() { document.getElementById("profileModal").style.display = "none"; }
-function updateProfile() {
-  const newName = document.getElementById("newName").value;
-  const newPassword = document.getElementById("newPassword").value;
-  const newPfp = document.getElementById("newPfp").value;
-  if (newName) adminProfile.displayName = newName;
-  if (newPassword) adminProfile.password = newPassword;
-  if (newPfp) adminProfile.pfp = newPfp;
-  if (adminOnlineKey) {
-    db.ref('adminsOnline/' + adminOnlineKey).update({
-      displayName: adminProfile.displayName,
-      pfp: adminProfile.pfp
-    });
-  }
-  setAdminProfileUI();
-  closeProfileModal();
-  alert("Profile updated!");
-}
-/* Admin Order Listener & Confirmation */
-function listenForOrdersForAdmin() {
-  db.ref('orders').on('child_added', snapshot => {
-    const data = snapshot.val();
-    const key = snapshot.key;
-    if (data && data.confirmed === false) {
-      renderOrderForAdmin(key, data);
-    }
-  });
-}
-function renderOrderForAdmin(key, data) {
-  const container = document.getElementById("buyerOrders");
-  const orderDiv = document.createElement("div");
-  orderDiv.className = "purchase-request";
-  orderDiv.setAttribute("data-key", key);
-  orderDiv.innerHTML = `<span>Order: ${data.item} - $${data.price.toFixed(2)}</span>
-                        <button onclick="adminConfirmOrder('${key}')">Confirm Order</button>`;
-  container.appendChild(orderDiv);
-}
-function adminConfirmOrder(key) {
-  // Update order with admin confirmation data
-  db.ref('orders/' + key).update({
-    confirmed: true,
-    adminName: adminProfile.displayName,
-    adminPfp: adminProfile.pfp,
-    confirmationTime: Date.now()
-  }).then(() => { alert("Order confirmed successfully!"); });
-}
-function clearAllRequests() {
-  document.getElementById("purchaseRequests").innerHTML = "";
-  // Optionally clear orders: db.ref('orders').remove();
-}
-/*******************************************************
- * Snack Trivia Generator
- *******************************************************/
-const triviaFacts = [
-  "Did you know that the first potato chip was made by accident in 1853?",
-  "Oreo cookies were first introduced in 1912.",
-  "Gushers were introduced by Betty Crocker in the 1990s.",
-  "Red Bull contains taurine, a naturally occurring amino acid.",
-  "Oreos are the best-selling cookies in the United States.",
-  "The world’s largest Twix bar was over 18 feet long!",
-  "Hot Cheetos have a cult following among celebrities.",
-  "Mountain Dew was originally created as a mixer for whiskey.",
-  "Coke was once marketed as a tonic for various ailments.",
-  "Pepsi was originally known as Brad’s Drink in 1893."
-];
-function generateTrivia() {
-  const randomIndex = Math.floor(Math.random() * triviaFacts.length);
-  document.getElementById("triviaText").textContent = triviaFacts[randomIndex];
-}
-/*******************************************************
- * Contact Form
- *******************************************************/
-function submitContactForm(e) {
-  e.preventDefault();
-  const name = document.getElementById("contactName").value;
-  const email = document.getElementById("contactEmail").value;
-  const message = document.getElementById("contactMessage").value;
-  alert(`Thanks for your message, ${name}! We'll get back to you shortly.`);
-  document.getElementById("contactName").value = "";
-  document.getElementById("contactEmail").value = "";
-  document.getElementById("contactMessage").value = "";
-}
-/*******************************************************
- * Global Event Listeners
- *******************************************************/
-window.onclick = function(event) {
-  ["modal", "adminModal", "paymentModal", "profileModal", "buyerConfirmationModal", "buyerLoadingOverlay"].forEach(id => {
-    const el = document.getElementById(id);
-    if (event.target === el) el.style.display = "none";
-  });
-};
-window.onload = function() {
-  renderShop();
-  document.getElementById("totalSales").textContent = totalSales.toFixed(2);
-};
-/*******************************************************
- * Extra Random Functions & Animations
- *******************************************************/
-function randomizeBackground() {
-  const colors = ["#121212", "#1e1e1e", "#222222", "#2a2a2a", "#333333", "#3a3a3a", "#444444", "#4a4a4a", "#555555", "#666666"];
-  const randomColor = colors[Math.floor(Math.random() * colors.length)];
-  document.body.style.backgroundColor = randomColor;
-}
-setInterval(randomizeBackground, 10000);
-function logFunFact() {
-  const funFacts = [
-    "Fun Fact: The average American consumes 18 acres of pizza in their lifetime.",
-    "Fun Fact: There are over 7,000 varieties of apples on Earth.",
-    "Fun Fact: Chocolate was once used as currency by the Aztecs.",
-    "Fun Fact: The world record for most scoops of ice cream eaten in one sitting is 36."
-  ];
-  console.log(funFacts[Math.floor(Math.random() * funFacts.length)]);
-}
-setInterval(logFunFact, 15000);
-</script>
-<!-- Filler Comments to Reach 1500 Lines; DO NOT REMOVE -->
-<!-- FILLER 1: Extra Code Line -->
-<!-- FILLER 2: Extra Code Line -->
-<!-- FILLER 3: Extra Code Line -->
-<!-- FILLER 4: Extra Code Line -->
-<!-- FILLER 5: Extra Code Line -->
-<!-- FILLER 6: Extra Code Line -->
-<!-- FILLER 7: Extra Code Line -->
-<!-- FILLER 8: Extra Code Line -->
-<!-- FILLER 9: Extra Code Line -->
-<!-- FILLER 10: Extra Code Line -->
-<!-- FILLER 11: Extra Code Line -->
-<!-- FILLER 12: Extra Code Line -->
-<!-- FILLER 13: Extra Code Line -->
-<!-- FILLER 14: Extra Code Line -->
-<!-- FILLER 15: Extra Code Line -->
-<!-- FILLER 16: Extra Code Line -->
-<!-- FILLER 17: Extra Code Line -->
-<!-- FILLER 18: Extra Code Line -->
-<!-- FILLER 19: Extra Code Line -->
-<!-- FILLER 20: Extra Code Line -->
-<!-- FILLER 21: Extra Code Line -->
-<!-- FILLER 22: Extra Code Line -->
-<!-- FILLER 23: Extra Code Line -->
-<!-- FILLER 24: Extra Code Line -->
-<!-- FILLER 25: Extra Code Line -->
-<!-- FILLER 26: Extra Code Line -->
-<!-- FILLER 27: Extra Code Line -->
-<!-- FILLER 28: Extra Code Line -->
-<!-- FILLER 29: Extra Code Line -->
-<!-- FILLER 30: Extra Code Line -->
-<!-- FILLER 31: Extra Code Line -->
-<!-- FILLER 32: Extra Code Line -->
-<!-- FILLER 33: Extra Code Line -->
-<!-- FILLER 34: Extra Code Line -->
-<!-- FILLER 35: Extra Code Line -->
-<!-- FILLER 36: Extra Code Line -->
-<!-- FILLER 37: Extra Code Line -->
-<!-- FILLER 38: Extra Code Line -->
-<!-- FILLER 39: Extra Code Line -->
-<!-- FILLER 40: Extra Code Line -->
-<!-- FILLER 41: Extra Code Line -->
-<!-- FILLER 42: Extra Code Line -->
-<!-- FILLER 43: Extra Code Line -->
-<!-- FILLER 44: Extra Code Line -->
-<!-- FILLER 45: Extra Code Line -->
-<!-- FILLER 46: Extra Code Line -->
-<!-- FILLER 47: Extra Code Line -->
-<!-- FILLER 48: Extra Code Line -->
-<!-- FILLER 49: Extra Code Line -->
-<!-- FILLER 50: Extra Code Line -->
-<!-- FILLER 51: Extra Code Line -->
-<!-- FILLER 52: Extra Code Line -->
-<!-- FILLER 53: Extra Code Line -->
-<!-- FILLER 54: Extra Code Line -->
-<!-- FILLER 55: Extra Code Line -->
-<!-- FILLER 56: Extra Code Line -->
-<!-- FILLER 57: Extra Code Line -->
-<!-- FILLER 58: Extra Code Line -->
-<!-- FILLER 59: Extra Code Line -->
-<!-- FILLER 60: Extra Code Line -->
-<!-- FILLER 61: Extra Code Line -->
-<!-- FILLER 62: Extra Code Line -->
-<!-- FILLER 63: Extra Code Line -->
-<!-- FILLER 64: Extra Code Line -->
-<!-- FILLER 65: Extra Code Line -->
-<!-- FILLER 66: Extra Code Line -->
-<!-- FILLER 67: Extra Code Line -->
-<!-- FILLER 68: Extra Code Line -->
-<!-- FILLER 69: Extra Code Line -->
-<!-- FILLER 70: Extra Code Line -->
-<!-- FILLER 71: Extra Code Line -->
-<!-- FILLER 72: Extra Code Line -->
-<!-- FILLER 73: Extra Code Line -->
-<!-- FILLER 74: Extra Code Line -->
-<!-- FILLER 75: Extra Code Line -->
-<!-- FILLER 76: Extra Code Line -->
-<!-- FILLER 77: Extra Code Line -->
-<!-- FILLER 78: Extra Code Line -->
-<!-- FILLER 79: Extra Code Line -->
-<!-- FILLER 80: Extra Code Line -->
-<!-- FILLER 81: Extra Code Line -->
-<!-- FILLER 82: Extra Code Line -->
-<!-- FILLER 83: Extra Code Line -->
-<!-- FILLER 84: Extra Code Line -->
-<!-- FILLER 85: Extra Code Line -->
-<!-- FILLER 86: Extra Code Line -->
-<!-- FILLER 87: Extra Code Line -->
-<!-- FILLER 88: Extra Code Line -->
-<!-- FILLER 89: Extra Code Line -->
-<!-- FILLER 90: Extra Code Line -->
-<!-- FILLER 91: Extra Code Line -->
-<!-- FILLER 92: Extra Code Line -->
-<!-- FILLER 93: Extra Code Line -->
-<!-- FILLER 94: Extra Code Line -->
-<!-- FILLER 95: Extra Code Line -->
-<!-- FILLER 96: Extra Code Line -->
-<!-- FILLER 97: Extra Code Line -->
-<!-- FILLER 98: Extra Code Line -->
-<!-- FILLER 99: Extra Code Line -->
-<!-- FILLER 100: Extra Code Line -->
-<!-- FILLER 101: Extra Code Line -->
-<!-- FILLER 102: Extra Code Line -->
-<!-- FILLER 103: Extra Code Line -->
-<!-- FILLER 104: Extra Code Line -->
-<!-- FILLER 105: Extra Code Line -->
-<!-- FILLER 106: Extra Code Line -->
-<!-- FILLER 107: Extra Code Line -->
-<!-- FILLER 108: Extra Code Line -->
-<!-- FILLER 109: Extra Code Line -->
-<!-- FILLER 110: Extra Code Line -->
-<!-- FILLER 111: Extra Code Line -->
-<!-- FILLER 112: Extra Code Line -->
-<!-- FILLER 113: Extra Code Line -->
-<!-- FILLER 114: Extra Code Line -->
-<!-- FILLER 115: Extra Code Line -->
-<!-- FILLER 116: Extra Code Line -->
-<!-- FILLER 117: Extra Code Line -->
-<!-- FILLER 118: Extra Code Line -->
-<!-- FILLER 119: Extra Code Line -->
-<!-- FILLER 120: Extra Code Line -->
-<!-- FILLER 121: Extra Code Line -->
-<!-- FILLER 122: Extra Code Line -->
-<!-- FILLER 123: Extra Code Line -->
-<!-- FILLER 124: Extra Code Line -->
-<!-- FILLER 125: Extra Code Line -->
-<!-- FILLER 126: Extra Code Line -->
-<!-- FILLER 127: Extra Code Line -->
-<!-- FILLER 128: Extra Code Line -->
-<!-- FILLER 129: Extra Code Line -->
-<!-- FILLER 130: Extra Code Line -->
-<!-- FILLER 131: Extra Code Line -->
-<!-- FILLER 132: Extra Code Line -->
-<!-- FILLER 133: Extra Code Line -->
-<!-- FILLER 134: Extra Code Line -->
-<!-- FILLER 135: Extra Code Line -->
-<!-- FILLER 136: Extra Code Line -->
-<!-- FILLER 137: Extra Code Line -->
-<!-- FILLER 138: Extra Code Line -->
-<!-- FILLER 139: Extra Code Line -->
-<!-- FILLER 140: Extra Code Line -->
-<!-- FILLER 141: Extra Code Line -->
-<!-- FILLER 142: Extra Code Line -->
-<!-- FILLER 143: Extra Code Line -->
-<!-- FILLER 144: Extra Code Line -->
-<!-- FILLER 145: Extra Code Line -->
-<!-- FILLER 146: Extra Code Line -->
-<!-- FILLER 147: Extra Code Line -->
-<!-- FILLER 148: Extra Code Line -->
-<!-- FILLER 149: Extra Code Line -->
-<!-- FILLER 150: Extra Code Line -->
-<!-- FILLER 151: Extra Code Line -->
-<!-- FILLER 152: Extra Code Line -->
-<!-- FILLER 153: Extra Code Line -->
-<!-- FILLER 154: Extra Code Line -->
-<!-- FILLER 155: Extra Code Line -->
-<!-- FILLER 156: Extra Code Line -->
-<!-- FILLER 157: Extra Code Line -->
-<!-- FILLER 158: Extra Code Line -->
-<!-- FILLER 159: Extra Code Line -->
-<!-- FILLER 160: Extra Code Line -->
-<!-- FILLER 161: Extra Code Line -->
-<!-- FILLER 162: Extra Code Line -->
-<!-- FILLER 163: Extra Code Line -->
-<!-- FILLER 164: Extra Code Line -->
-<!-- FILLER 165: Extra Code Line -->
-<!-- FILLER 166: Extra Code Line -->
-<!-- FILLER 167: Extra Code Line -->
-<!-- FILLER 168: Extra Code Line -->
-<!-- FILLER 169: Extra Code Line -->
-<!-- FILLER 170: Extra Code Line -->
-<!-- FILLER 171: Extra Code Line -->
-<!-- FILLER 172: Extra Code Line -->
-<!-- FILLER 173: Extra Code Line -->
-<!-- FILLER 174: Extra Code Line -->
-<!-- FILLER 175: Extra Code Line -->
-<!-- FILLER 176: Extra Code Line -->
-<!-- FILLER 177: Extra Code Line -->
-<!-- FILLER 178: Extra Code Line -->
-<!-- FILLER 179: Extra Code Line -->
-<!-- FILLER 180: Extra Code Line -->
-<!-- FILLER 181: Extra Code Line -->
-<!-- FILLER 182: Extra Code Line -->
-<!-- FILLER 183: Extra Code Line -->
-<!-- FILLER 184: Extra Code Line -->
-<!-- FILLER 185: Extra Code Line -->
-<!-- FILLER 186: Extra Code Line -->
-<!-- FILLER 187: Extra Code Line -->
-<!-- FILLER 188: Extra Code Line -->
-<!-- FILLER 189: Extra Code Line -->
-<!-- FILLER 190: Extra Code Line -->
-<!-- FILLER 191: Extra Code Line -->
-<!-- FILLER 192: Extra Code Line -->
-<!-- FILLER 193: Extra Code Line -->
-<!-- FILLER 194: Extra Code Line -->
-<!-- FILLER 195: Extra Code Line -->
-<!-- FILLER 196: Extra Code Line -->
-<!-- FILLER 197: Extra Code Line -->
-<!-- FILLER 198: Extra Code Line -->
-<!-- FILLER 199: Extra Code Line -->
-<!-- FILLER 200: Extra Code Line -->
-<!-- FILLER 201: Extra Code Line -->
-<!-- FILLER 202: Extra Code Line -->
-<!-- FILLER 203: Extra Code Line -->
-<!-- FILLER 204: Extra Code Line -->
-<!-- FILLER 205: Extra Code Line -->
-<!-- FILLER 206: Extra Code Line -->
-<!-- FILLER 207: Extra Code Line -->
-<!-- FILLER 208: Extra Code Line -->
-<!-- FILLER 209: Extra Code Line -->
-<!-- FILLER 210: Extra Code Line -->
-<!-- FILLER 211: Extra Code Line -->
-<!-- FILLER 212: Extra Code Line -->
-<!-- FILLER 213: Extra Code Line -->
-<!-- FILLER 214: Extra Code Line -->
-<!-- FILLER 215: Extra Code Line -->
-<!-- FILLER 216: Extra Code Line -->
-<!-- FILLER 217: Extra Code Line -->
-<!-- FILLER 218: Extra Code Line -->
-<!-- FILLER 219: Extra Code Line -->
-<!-- FILLER 220: Extra Code Line -->
-<!-- FILLER 221: Extra Code Line -->
-<!-- FILLER 222: Extra Code Line -->
-<!-- FILLER 223: Extra Code Line -->
-<!-- FILLER 224: Extra Code Line -->
-<!-- FILLER 225: Extra Code Line -->
-<!-- FILLER 226: Extra Code Line -->
-<!-- FILLER 227: Extra Code Line -->
-<!-- FILLER 228: Extra Code Line -->
-<!-- FILLER 229: Extra Code Line -->
-<!-- FILLER 230: Extra Code Line -->
-<!-- FILLER 231: Extra Code Line -->
-<!-- FILLER 232: Extra Code Line -->
-<!-- FILLER 233: Extra Code Line -->
-<!-- FILLER 234: Extra Code Line -->
-<!-- FILLER 235: Extra Code Line -->
-<!-- FILLER 236: Extra Code Line -->
-<!-- FILLER 237: Extra Code Line -->
-<!-- FILLER 238: Extra Code Line -->
-<!-- FILLER 239: Extra Code Line -->
-<!-- FILLER 240: Extra Code Line -->
-<!-- FILLER 241: Extra Code Line -->
-<!-- FILLER 242: Extra Code Line -->
-<!-- FILLER 243: Extra Code Line -->
-<!-- FILLER 244: Extra Code Line -->
-<!-- FILLER 245: Extra Code Line -->
-<!-- FILLER 246: Extra Code Line -->
-<!-- FILLER 247: Extra Code Line -->
-<!-- FILLER 248: Extra Code Line -->
-<!-- FILLER 249: Extra Code Line -->
-<!-- FILLER 250: Extra Code Line -->
-<!-- FILLER 251: Extra Code Line -->
-<!-- FILLER 252: Extra Code Line -->
-<!-- FILLER 253: Extra Code Line -->
-<!-- FILLER 254: Extra Code Line -->
-<!-- FILLER 255: Extra Code Line -->
-<!-- FILLER 256: Extra Code Line -->
-<!-- FILLER 257: Extra Code Line -->
-<!-- FILLER 258: Extra Code Line -->
-<!-- FILLER 259: Extra Code Line -->
-<!-- FILLER 260: Extra Code Line -->
-<!-- FILLER 261: Extra Code Line -->
-<!-- FILLER 262: Extra Code Line -->
-<!-- FILLER 263: Extra Code Line -->
-<!-- FILLER 264: Extra Code Line -->
-<!-- FILLER 265: Extra Code Line -->
-<!-- FILLER 266: Extra Code Line -->
-<!-- FILLER 267: Extra Code Line -->
-<!-- FILLER 268: Extra Code Line -->
-<!-- FILLER 269: Extra Code Line -->
-<!-- FILLER 270: Extra Code Line -->
-<!-- FILLER 271: Extra Code Line -->
-<!-- FILLER 272: Extra Code Line -->
-<!-- FILLER 273: Extra Code Line -->
-<!-- FILLER 274: Extra Code Line -->
-<!-- FILLER 275: Extra Code Line -->
-<!-- FILLER 276: Extra Code Line -->
-<!-- FILLER 277: Extra Code Line -->
-<!-- FILLER 278: Extra Code Line -->
-<!-- FILLER 279: Extra Code Line -->
-<!-- FILLER 280: Extra Code Line -->
-<!-- FILLER 281: Extra Code Line -->
-<!-- FILLER 282: Extra Code Line -->
-<!-- FILLER 283: Extra Code Line -->
-<!-- FILLER 284: Extra Code Line -->
-<!-- FILLER 285: Extra Code Line -->
-<!-- FILLER 286: Extra Code Line -->
-<!-- FILLER 287: Extra Code Line -->
-<!-- FILLER 288: Extra Code Line -->
-<!-- FILLER 289: Extra Code Line -->
-<!-- FILLER 290: Extra Code Line -->
-<!-- FILLER 291: Extra Code Line -->
-<!-- FILLER 292: Extra Code Line -->
-<!-- FILLER 293: Extra Code Line -->
-<!-- FILLER 294: Extra Code Line -->
-<!-- FILLER 295: Extra Code Line -->
-<!-- FILLER 296: Extra Code Line -->
-<!-- F
+
+    <!-- Buyer Order Section -->
+    <h2>Order History</h2>
+    <div id="orderHistory"></div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeProfileModal()">&times;</span>
+            <h2>Update Profile</h2>
+            <input type="text" id="newName" placeholder="New Name" />
+            <input type="password" id="newPassword" placeholder="New Password" />
+            <input type="file" id="newPfpInput" />
+            <img id="profilePicturePreview" src="" alt="Profile Picture Preview" />
+            <button onclick="updateProfile()">Update Profile</button>
+        </div>
+    </div>
+
+    <!-- Trivia Section -->
+    <div id="triviaSection">
+        <h2>Trivia</h2>
+        <p id="triviaText">Snack and Animal Facts will appear here!</p>
+        <button onclick="generateTrivia()">Generate Trivia</button>
+        <p id="animalFact"></p>
+    </div>
+
+    <script>
+        // Variables for Admin Profile
+        let adminProfile = {
+            username: "",
+            password: "",
+            displayName: "Admin",
+            pfp: "admin-profile.jpg"
+        };
+
+        let isAdmin = false;
+        let adminOnlineKey = null;
+        let totalSales = 0;
+
+        // Close Modal Function
+        function closeModal(id) {
+            document.getElementById(id).style.display = "none";
+        }
+
+        // Login Admin
+        function loginAdmin() {
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
+            if (user === "admin" && pass === "admin123") {
+                adminProfile.username = user;
+                adminProfile.password = pass;
+                document.getElementById("adminModal").style.display = "none";
+                showLoadingOverlay();
+                setTimeout(() => {
+                    isAdmin = true;
+                    document.getElementById("adminPanel").style.display = "block";
+                    updateAdminStats();
+                    addAdminOnline();
+                    hideLoadingOverlay();
+                }, 3000);
+            } else {
+                document.getElementById("adminMessage").innerHTML = "<p style='color:red;'>❌ Incorrect credentials</p>";
+            }
+        }
+
+        // Show loading overlay
+        function showLoadingOverlay() {
+            document.getElementById("loadingOverlay").style.display = "flex";
+        }
+
+        // Hide loading overlay
+        function hideLoadingOverlay() {
+            document.getElementById("loadingOverlay").style.display = "none";
+        }
+
+        // Add Admin to Online List
+        function addAdminOnline() {
+            const ref = db.ref('adminsOnline').push({
+                username: adminProfile.username,
+                displayName: adminProfile.displayName,
+                pfp: adminProfile.pfp,
+                loginTime: Date.now()
+            });
+            adminOnlineKey = ref.key;
+            ref.onDisconnect().remove();
+        }
+
+        // Update Admin Stats
+        function updateAdminStats() {
+            db.ref('orders').once('value', snapshot => {
+                let totalOrders = 0;
+                let totalSales = 0;
+                let pendingOrders = 0;
+                for (let key in snapshot.val()) {
+                    totalOrders++;
+                    const order = snapshot.val()[key];
+                    totalSales += order.price;
+                    if (!order.confirmed) {
+                        pendingOrders++;
+                    }
+                }
+                document.getElementById("totalOrders").textContent = `Total Orders: ${totalOrders}`;
+                document.getElementById("totalSales").textContent = `Total Sales: $${totalSales.toFixed(2)}`;
+                document.getElementById("pendingOrders").textContent = `Pending Orders: ${pendingOrders}`;
+            });
+        }
+
+        // Admin Logout
+        function logoutAdmin() {
+            isAdmin = false;
+            adminProfile = { username: "", password: "", displayName: "Admin", pfp: "admin-profile.jpg" };
+            document.getElementById("adminPanel").style.display = "none";
+            document.getElementById("adminModal").style.display = "flex";
+        }
+
+        // Generate Snack and Animal Trivia
+        const snackTrivia = [
+            "Did you know that the first potato chip was made by accident in 1853?",
+            "Oreo cookies were first introduced in 1912.",
+            "Gushers were introduced by Betty Crocker in the 1990s.",
+            "Red Bull contains taurine, a naturally occurring amino acid.",
+            "Oreos are the best-selling cookies in the United States."
+        ];
+
+        const animalTrivia = [
+            "A group of flamingos is called a 'flamboyance.'",
+            "Elephants are the only animals that can’t jump.",
+            "A lion’s roar can be heard from 5 miles away.",
+            "A giraffe's neck has the same number of bones as a human neck.",
+            "Cows have best friends and get stressed when they are separated."
+        ];
+
+        function generateTrivia() {
+            const randomIndex = Math.floor(Math.random() * snackTrivia.length);
+            const randomAnimalIndex = Math.floor(Math.random() * animalTrivia.length);
+            document.getElementById("triviaText").textContent = `${snackTrivia[randomIndex]} \n\n Animal Fact: ${animalTrivia[randomAnimalIndex]}`;
+        }
+
+        // Update Profile
+        function updateProfile() {
+            const newName = document.getElementById("newName").value;
+            const newPassword = document.getElementById("newPassword").value;
+            const newPfp = document.getElementById("newPfpInput").files[0];
+            if (newName) adminProfile.displayName = newName;
+            if (newPassword) adminProfile.password = newPassword;
+            if (newPfp) {
+                const reader = new FileReader();
+                reader.onload = function () {
+                    adminProfile.pfp = reader.result;
+                    document.getElementById("profilePicturePreview").src = reader.result;
+                };
+                reader.readAsDataURL(newPfp);
+            }
+            alert("Profile updated successfully!");
+            closeModal('profileModal');
+        }
+
+        // Profile Picture Preview
+        document.getElementById("newPfpInput").addEventListener("change", function () {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById("profilePicturePreview").src = e.target.result;
+            };
+            reader.readAsDataURL(this.files[0]);
+        });
+
+        // Close Profile Modal
+        function closeProfileModal() {
+            document.getElementById("profileModal").style.display = "none";
+        }
+    </script>
+</body>
+</html>
 
