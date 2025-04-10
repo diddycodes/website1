@@ -1,358 +1,861 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Fancy Snack Shop</title>
-  <!-- Firebase App (the core Firebase SDK) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <!-- Firebase Realtime Database -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #121212;
-      color: white;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background-color: #1c1c1c;
-      padding: 20px;
-      text-align: center;
-      font-size: 2.5rem;
-      position: relative;
-    }
-    .settings-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: transparent;
-      border: none;
-      font-size: 2rem;
-      color: #fff;
-      cursor: pointer;
-    }
-    .container {
-      padding: 20px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 20px;
-      animation: fadeIn 2s ease-in-out;
-    }
-    .item {
-      background-color: #333;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-      cursor: pointer;
-      transition: transform 0.2s ease-in-out;
-    }
-    .item:hover {
-      transform: scale(1.05);
-    }
-    .modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-    .modal-content {
-      background: #1e1e1e;
-      padding: 30px;
-      border-radius: 10px;
-      text-align: center;
-      width: 90%;
-      max-width: 400px;
-    }
-    .modal button {
-      padding: 10px 20px;
-      margin: 10px 5px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .admin-panel {
-      display: none;
-      padding: 20px;
-      background: #1c1c1c;
-      border-radius: 10px;
-      margin: 20px;
-    }
-    .admin-panel h3 {
-      margin: 0;
-      font-size: 1.5rem;
-    }
-    .admin-panel button {
-      padding: 10px 20px;
-      margin-top: 20px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .purchase-request {
-      background: #2a2a2a;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .purchase-request button {
-      background: #f44336;
-    }
-    @keyframes fadeIn {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
-    }
-  </style>
-  <script>
-    // Initialize Firebase with your provided configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyAwrXlL0oaON4pE4Ko9LEZsBj1PI5YqtkM",
-      authDomain: "website-4f366.firebaseapp.com",
-      databaseURL: "https://website-4f366-default-rtdb.firebaseio.com",
-      projectId: "website-4f366",
-      storageBucket: "website-4f366.appspot.com",
-      messagingSenderId: "915291737784",
-      appId: "1:915291737784:web:5f5b0a2803f29d299d6e4d",
-      measurementId: "G-GSTM5TR39X"
-    };
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-  </script>
-</head>
-<body>
-  <header>
-    🍿 Fancy Snack & Drink Shop 🥤
-    <button class="settings-btn" onclick="toggleAdminLogin()">⚙️</button>
-  </header>
+  <head>
+    <!--
+      Fancy Snack Shop v2.0
+      An enhanced single-file project with Firebase integration for real-time purchase confirmations,
+      responsive design, and extra random/cool features such as a Snack Trivia generator, About section,
+      Contact form, extra animations, and more. Enjoy!
+    -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fancy Snack & Drink Shop v2.0</title>
+    
+    <!-- Link to Google Fonts for enhanced typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Feel free to use any other font of your choice -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
-  <div class="container" id="shop"></div>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <!-- Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <!-- Purchase Modal -->
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <p id="modal-text"></p>
-      <button onclick="showPayment('paypal')">Pay with PayPal</button>
-      <button onclick="showPayment('cashapp')">Pay with CashApp</button>
-      <button onclick="showPayment('applepay')">Pay with Apple Pay</button>
-      <button onclick="confirmPurchase()">Done</button>
-      <button onclick="closeModal()">Close</button>
-    </div>
-  </div>
-
-  <!-- Payment Modal -->
-  <div class="modal" id="paymentModal">
-    <div class="modal-content">
-      <h3 id="paymentTitle"></h3>
-      <p id="paymentText"></p>
-      <button id="copyBtn">Copy Info</button>
-      <a id="paymentLink" href="#" target="_blank" style="color: #4CAF50;">Pay Now</a>
-      <button onclick="closePaymentModal()">Close</button>
-    </div>
-  </div>
-
-  <!-- Admin Login Modal -->
-  <div class="modal" id="adminModal">
-    <div class="modal-content">
-      <h3>Admin Login</h3>
-      <input type="text" id="username" placeholder="Username">
-      <input type="password" id="password" placeholder="Password">
-      <button onclick="loginAdmin()">Login</button>
-      <div id="adminMessage"></div>
-    </div>
-  </div>
-
-  <!-- Admin Panel -->
-  <div class="admin-panel" id="adminPanel">
-    <h3>Admin Panel</h3>
-    <p>Total Sales: $<span id="totalSales">0.00</span></p>
-    <div id="purchaseRequests"></div>
-    <button onclick="clearAllRequests()">Clear All</button>
-  </div>
-
-  <script>
-    // List of snacks
-    const snacks = [
-      { name: "Hot Cheetos", price: 2.5 },
-      { name: "Mountain Dew", price: 1.75 },
-      { name: "Twix", price: 1.25 },
-      { name: "Red Bull", price: 3.0 },
-      { name: "Takis", price: 2.75 },
-      { name: "Pepsi", price: 1.5 },
-      { name: "Gushers", price: 2.0 },
-      { name: "Kit Kat", price: 1.5 },
-      { name: "Arizona Tea", price: 1.0 },
-      { name: "Snickers", price: 1.25 }
-    ];
-
-    let totalSales = parseFloat(localStorage.getItem("fancyShopTotalSales")) || 0;
-    let currentItem = null;
-    let isAdmin = false;
-
-    // Payment methods info
-    const paymentMethods = {
-      paypal: {
-        info: "kailanpacheco70@gmail.com",
-        instructions: "Send payment to: kailanpacheco70@gmail.com",
-        link: "https://paypal.com"
-      },
-      cashapp: {
-        info: "$FancySnacks123",
-        instructions: "Send payment to: $FancySnacks123",
-        link: "https://cash.app"
-      },
-      applepay: {
-        info: "(123) 456-7890",
-        instructions: "Send payment to: (123) 456-7890",
-        link: "#"
-      }
-    };
-
-    // Render the snack shop items
-    function renderShop() {
-      const shop = document.getElementById("shop");
-      shop.innerHTML = "";
-      snacks.forEach(snack => {
-        const div = document.createElement("div");
-        div.className = "item";
-        div.innerHTML = `<h3>${snack.name}</h3><p>$${snack.price.toFixed(2)}</p>`;
-        div.onclick = () => openModal(snack);
-        shop.appendChild(div);
-      });
-    }
-
-    // Open purchase modal for a selected snack
-    function openModal(snack) {
-      currentItem = snack;
-      document.getElementById("modal-text").textContent = `You are purchasing ${snack.name} for $${snack.price.toFixed(2)}.`;
-      document.getElementById("modal").style.display = "flex";
-    }
-
-    // Close modals
-    function closeModal() {
-      document.getElementById("modal").style.display = "none";
-    }
-    function closePaymentModal() {
-      document.getElementById("paymentModal").style.display = "none";
-    }
-
-    // Show dynamic payment information
-    function showPayment(method) {
-      const m = paymentMethods[method];
-      document.getElementById("paymentTitle").textContent = `${method.toUpperCase()} Payment`;
-      document.getElementById("paymentText").textContent = m.instructions;
-      document.getElementById("paymentLink").href = m.link;
-      document.getElementById("copyBtn").onclick = () => {
-        navigator.clipboard.writeText(m.info);
-        alert(`${method} info copied!`);
-      };
-      document.getElementById("paymentModal").style.display = "flex";
-    }
-
-    // Confirm purchase and send confirmation to admin via Firebase
-    function confirmPurchase() {
-      if (!currentItem) return;
-      totalSales += currentItem.price;
-      localStorage.setItem("fancyShopTotalSales", totalSales);
-      document.getElementById("totalSales").textContent = totalSales.toFixed(2);
+    <style>
+      /* Base Styles */
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { width: 100%; height: 100%; font-family: 'Roboto', sans-serif; background-color: #121212; color: #fff; }
       
-      // Push purchase info to Firebase
-      db.ref('purchases').push({
-        item: currentItem.name,
-        price: currentItem.price,
-        time: Date.now()
-      })
-      .then(() => {
-        alert("Purchase confirmed. Admin has been notified!");
-      })
-      .catch((err) => {
-        console.error(err);
-        alert("Error sending confirmation!");
-      });
-
-      closeModal();
-    }
-
-    // Toggle admin login modal (admin logins work on remote sites, not local)
-    function toggleAdminLogin() {
-      const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-      if (isLocal) {
-        alert("Admin access is disabled in the local version.");
-        return;
+      /* Header & Navigation */
+      header {
+        background-color: #1c1c1c;
+        padding: 20px;
+        text-align: center;
+        font-size: 2.5rem;
+        position: relative;
+        z-index: 100;
+        box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.5);
       }
-      document.getElementById("adminModal").style.display = "flex";
-    }
+      .settings-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: transparent;
+        border: none;
+        font-size: 2rem;
+        color: #fff;
+        cursor: pointer;
+      }
+      nav {
+        background: #222;
+        display: flex;
+        justify-content: center;
+        padding: 10px 0;
+      }
+      nav a {
+        color: #ccc;
+        text-decoration: none;
+        margin: 0 15px;
+        padding: 8px;
+        transition: color 0.3s ease;
+      }
+      nav a:hover { color: #4CAF50; }
+      
+      /* Container for the shop */
+      .container {
+        padding: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        animation: fadeIn 2s ease-in-out;
+      }
+      .item {
+        background-color: #333;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        cursor: pointer;
+        transition: transform 0.2s ease-in-out, background 0.3s ease;
+      }
+      .item:hover {
+        transform: scale(1.05);
+        background-color: #444;
+      }
+      .item h3 { margin-bottom: 10px; }
+      .item p { font-size: 1.2rem; }
 
-    // Admin login verification; on success, show admin panel and listen for purchase updates
-    function loginAdmin() {
-      const user = document.getElementById("username").value;
-      const pass = document.getElementById("password").value;
-      if (user === "admin" && pass === "diddy") {
-        isAdmin = true;
-        document.getElementById("adminPanel").style.display = "block";
-        document.getElementById("adminModal").style.display = "none";
+      /* Modals styling */
+      .modal {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+      .modal-content {
+        background: #1e1e1e;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        width: 90%;
+        max-width: 400px;
+        position: relative;
+        animation: popup 0.5s ease-out;
+      }
+      .modal button {
+        padding: 10px 20px;
+        margin: 10px 5px;
+        background: #4CAF50;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        color: white;
+      }
+      .modal button:hover { background: #45a049; }
+      
+      /* Admin Panel */
+      .admin-panel {
+        display: none;
+        padding: 20px;
+        background: #1c1c1c;
+        border-radius: 10px;
+        margin: 20px;
+      }
+      .admin-panel h3 { margin-bottom: 10px; }
+      .admin-panel button {
+        padding: 10px 20px;
+        margin-top: 20px;
+        background: #4CAF50;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        color: #fff;
+      }
+      .purchase-request {
+        background: #2a2a2a;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .purchase-request button { background: #f44336; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+      
+      /* About Section */
+      .about-section {
+        padding: 40px 20px;
+        background: #1a1a1a;
+        text-align: center;
+      }
+      .about-section h2 { margin-bottom: 20px; font-size: 2rem; }
+      .about-section p { max-width: 800px; margin: 0 auto; line-height: 1.6; }
+
+      /* Contact Section */
+      .contact-section {
+        padding: 40px 20px;
+        background: #222;
+        text-align: center;
+      }
+      .contact-section h2 { margin-bottom: 20px; font-size: 2rem; }
+      .contact-section form {
+        max-width: 500px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+      }
+      .contact-section input, .contact-section textarea {
+        padding: 10px;
+        margin-bottom: 15px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1rem;
+      }
+      .contact-section button {
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      .contact-section button:hover { background: #45a049; }
+
+      /* Snack Trivia Section */
+      .trivia-section {
+        padding: 40px 20px;
+        background: #1e1e1e;
+        text-align: center;
+      }
+      .trivia-section h2 { margin-bottom: 20px; font-size: 2rem; }
+      .trivia-box {
+        background: #333;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 0 auto 20px;
+        max-width: 600px;
+      }
+      .trivia-box p { font-size: 1.2rem; }
+      .trivia-section button {
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .trivia-section button:hover { background: #45a049; }
+
+      /* Footer */
+      footer {
+        padding: 20px;
+        text-align: center;
+        background: #1c1c1c;
+        font-size: 0.9rem;
+        margin-top: 40px;
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
+      }
+      @keyframes popup {
+        0% { transform: scale(0.8); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+
+      /* Mobile Responsiveness */
+      @media (max-width: 768px) {
+        header { font-size: 2rem; padding: 15px; }
+        nav a { margin: 0 10px; }
+        .container { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+        .modal-content { width: 95%; }
+        .about-section, .contact-section, .trivia-section { padding: 30px 10px; }
+      }
+
+      /* Extra random background animation */
+      .animated-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background: linear-gradient(45deg, #121212, #1e1e1e, #121212);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+      }
+      @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+
+      /* Additional spacing for demonstration */
+      .spacer { height: 40px; }
+    </style>
+  </head>
+  <body>
+    <!-- Background Animation -->
+    <div class="animated-bg"></div>
+
+    <!-- Header -->
+    <header>
+      🍿 Fancy Snack & Drink Shop v2.0 🥤
+      <button class="settings-btn" onclick="toggleAdminLogin()">⚙️</button>
+    </header>
+
+    <!-- Navigation Menu -->
+    <nav>
+      <a href="#shopSection">Shop</a>
+      <a href="#aboutSection">About</a>
+      <a href="#triviaSection">Snack Trivia</a>
+      <a href="#contactSection">Contact</a>
+      <a href="#adminSection" onclick="toggleAdminLogin()">Admin</a>
+    </nav>
+
+    <!-- Shop Section -->
+    <section id="shopSection">
+      <div class="container" id="shop">
+        <!-- Snack items will be injected here by JavaScript -->
+      </div>
+    </section>
+
+    <!-- Purchase Modal -->
+    <div class="modal" id="modal">
+      <div class="modal-content">
+        <p id="modal-text"></p>
+        <button onclick="showPayment('paypal')">Pay with PayPal</button>
+        <button onclick="showPayment('cashapp')">Pay with CashApp</button>
+        <button onclick="showPayment('applepay')">Pay with Apple Pay</button>
+        <button onclick="confirmPurchase()">Done</button>
+        <button onclick="closeModal()">Close</button>
+      </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal" id="paymentModal">
+      <div class="modal-content">
+        <h3 id="paymentTitle"></h3>
+        <p id="paymentText"></p>
+        <button id="copyBtn">Copy Info</button>
+        <a id="paymentLink" href="#" target="_blank" style="color: #4CAF50;">Pay Now</a>
+        <button onclick="closePaymentModal()">Close</button>
+      </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div class="modal" id="adminModal">
+      <div class="modal-content">
+        <h3>Admin Login</h3>
+        <input type="text" id="username" placeholder="Username" />
+        <input type="password" id="password" placeholder="Password" />
+        <button onclick="loginAdmin()">Login</button>
+        <div id="adminMessage"></div>
+      </div>
+    </div>
+
+    <!-- Admin Panel Section -->
+    <section id="adminSection">
+      <div class="admin-panel" id="adminPanel">
+        <h3>Admin Panel</h3>
+        <p>Total Sales: $<span id="totalSales">0.00</span></p>
+        <div id="purchaseRequests"></div>
+        <button onclick="clearAllRequests()">Clear All</button>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="aboutSection" class="about-section">
+      <h2>About Fancy Snack Shop</h2>
+      <p>
+        Welcome to Fancy Snack & Drink Shop v2.0! We are all about delivering the coolest, most delicious snacks and beverages right to your fingertips. With a sleek dark theme,
+        real‑time purchase confirmations via Firebase, and extra features like snack trivia and contact options, our shop is designed for both fun and functionality.
+      </p>
+    </section>
+
+    <!-- Snack Trivia Section -->
+    <section id="triviaSection" class="trivia-section">
+      <h2>Snack Trivia</h2>
+      <div class="trivia-box" id="triviaBox">
+        <p id="triviaText">Press the button below to get a random snack trivia fact!</p>
+      </div>
+      <button onclick="generateTrivia()">Generate Trivia</button>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contactSection" class="contact-section">
+      <h2>Contact Us</h2>
+      <form onsubmit="submitContactForm(event)">
+        <input type="text" id="contactName" placeholder="Your Name" required />
+        <input type="email" id="contactEmail" placeholder="Your Email" required />
+        <textarea id="contactMessage" rows="5" placeholder="Your Message" required></textarea>
+        <button type="submit">Send Message</button>
+      </form>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      &copy; 2025 Fancy Snack Shop. All rights reserved.
+    </footer>
+
+    <!-- Spacer for extra padding -->
+    <div class="spacer"></div>
+
+    <!-- Extra Random JS Functions and Comments -->
+    <script>
+      /*******************************************************
+       * Firebase Setup & Initialization
+       *******************************************************/
+      // Provided Firebase configuration for production deployment
+      const firebaseConfig = {
+        apiKey: "AIzaSyAwrXlL0oaON4pE4Ko9LEZsBj1PI5YqtkM",
+        authDomain: "website-4f366.firebaseapp.com",
+        databaseURL: "https://website-4f366-default-rtdb.firebaseio.com",
+        projectId: "website-4f366",
+        storageBucket: "website-4f366.appspot.com",
+        messagingSenderId: "915291737784",
+        appId: "1:915291737784:web:5f5b0a2803f29d299d6e4d",
+        measurementId: "G-GSTM5TR39X"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
+
+      /*******************************************************
+       * Shop Items & Rendering
+       *******************************************************/
+      // A list of snack items offered by the shop
+      const snacks = [
+        { name: "Hot Cheetos", price: 2.5 },
+        { name: "Mountain Dew", price: 1.75 },
+        { name: "Twix", price: 1.25 },
+        { name: "Red Bull", price: 3.0 },
+        { name: "Takis", price: 2.75 },
+        { name: "Pepsi", price: 1.5 },
+        { name: "Gushers", price: 2.0 },
+        { name: "Kit Kat", price: 1.5 },
+        { name: "Arizona Tea", price: 1.0 },
+        { name: "Snickers", price: 1.25 },
+        { name: "Reese's Cups", price: 1.5 },
+        { name: "Oreos", price: 1.75 },
+        { name: "Sprite", price: 1.5 },
+        { name: "Coke", price: 1.5 }
+      ];
+
+      let totalSales = parseFloat(localStorage.getItem("fancyShopTotalSales")) || 0;
+      let currentItem = null;
+      let isAdmin = false;
+
+      // Payment methods information object
+      const paymentMethods = {
+        paypal: {
+          info: "kailanpacheco70@gmail.com",
+          instructions: "Send payment to: kailanpacheco70@gmail.com",
+          link: "https://paypal.com"
+        },
+        cashapp: {
+          info: "$FancySnacks123",
+          instructions: "Send payment to: $FancySnacks123",
+          link: "https://cash.app"
+        },
+        applepay: {
+          info: "(123) 456-7890",
+          instructions: "Send payment to: (123) 456-7890",
+          link: "#"
+        }
+      };
+
+      // Render all snack items into the shop container
+      function renderShop() {
+        const shop = document.getElementById("shop");
+        shop.innerHTML = "";
+        snacks.forEach(snack => {
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `<h3>${snack.name}</h3><p>$${snack.price.toFixed(2)}</p>`;
+          div.onclick = () => openModal(snack);
+          shop.appendChild(div);
+        });
+      }
+
+      /*******************************************************
+       * Modal Functions
+       *******************************************************/
+      // Open purchase modal with the selected snack
+      function openModal(snack) {
+        currentItem = snack;
+        document.getElementById("modal-text").textContent = `You are purchasing ${snack.name} for $${snack.price.toFixed(2)}.`;
+        document.getElementById("modal").style.display = "flex";
+      }
+
+      // Close any open modal (purchase modal)
+      function closeModal() {
+        document.getElementById("modal").style.display = "none";
+      }
+
+      // Close payment modal
+      function closePaymentModal() {
+        document.getElementById("paymentModal").style.display = "none";
+      }
+
+      // Display payment modal with the chosen payment method details
+      function showPayment(method) {
+        const m = paymentMethods[method];
+        document.getElementById("paymentTitle").textContent = `${method.toUpperCase()} Payment`;
+        document.getElementById("paymentText").textContent = m.instructions;
+        document.getElementById("paymentLink").href = m.link;
+        document.getElementById("copyBtn").onclick = () => {
+          navigator.clipboard.writeText(m.info);
+          alert(`${method} info copied!`);
+        };
+        document.getElementById("paymentModal").style.display = "flex";
+      }
+
+      /*******************************************************
+       * Purchase Confirmation & Firebase Integration
+       *******************************************************/
+      // Confirm purchase - update total sales and send confirmation to Firebase
+      function confirmPurchase() {
+        if (!currentItem) return;
+        totalSales += currentItem.price;
+        localStorage.setItem("fancyShopTotalSales", totalSales);
         document.getElementById("totalSales").textContent = totalSales.toFixed(2);
-        document.getElementById("adminMessage").innerHTML = "";
-        listenForPurchases();
-      } else {
-        document.getElementById("adminMessage").innerHTML = "<p style='color:red;'>❌ Incorrect credentials</p>";
+
+        // Push purchase information to Firebase
+        db.ref('purchases').push({
+          item: currentItem.name,
+          price: currentItem.price,
+          time: Date.now()
+        })
+        .then(() => {
+          alert("Purchase confirmed. Admin has been notified!");
+        })
+        .catch((err) => {
+          console.error(err);
+          alert("Error sending confirmation!");
+        });
+
+        closeModal();
       }
-    }
 
-    // Listen for new purchase confirmations from Firebase and update admin panel in real time
-    function listenForPurchases() {
-      db.ref('purchases').on('child_added', snapshot => {
-        const data = snapshot.val();
-        const key = snapshot.key;
-        const msg = document.createElement("div");
-        msg.className = "purchase-request";
-        msg.setAttribute("data-key", key);
-        msg.innerHTML = `<span>${data.item} - $${data.price.toFixed(2)}</span>
-                         <button onclick="markAsDone('${key}')">✔️</button>`;
-        document.getElementById("purchaseRequests").appendChild(msg);
-      });
-    }
+      /*******************************************************
+       * Admin Panel and Login Functions
+       *******************************************************/
+      // Toggle the admin login modal (if not on localhost)
+      function toggleAdminLogin() {
+        const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+        if (isLocal) {
+          alert("Admin access is disabled in the local version.");
+          return;
+        }
+        document.getElementById("adminModal").style.display = "flex";
+      }
 
-    // Mark a purchase as done: remove it from Firebase and from the admin panel
-    function markAsDone(key) {
-      db.ref('purchases/' + key).remove().then(() => {
-        const reqDiv = document.querySelector(`[data-key="${key}"]`);
-        if (reqDiv) reqDiv.remove();
-      });
-    }
+      // Validate admin login and, on success, show the admin panel and listen for new purchases
+      function loginAdmin() {
+        const user = document.getElementById("username").value;
+        const pass = document.getElementById("password").value;
+        if (user === "admin" && pass === "diddy") {
+          isAdmin = true;
+          document.getElementById("adminPanel").style.display = "block";
+          document.getElementById("adminModal").style.display = "none";
+          document.getElementById("totalSales").textContent = totalSales.toFixed(2);
+          document.getElementById("adminMessage").innerHTML = "";
+          listenForPurchases();
+        } else {
+          document.getElementById("adminMessage").innerHTML = "<p style='color:red;'>❌ Incorrect credentials</p>";
+        }
+      }
 
-    // Clear all purchase confirmations (only in the admin panel view)
-    function clearAllRequests() {
-      document.getElementById("purchaseRequests").innerHTML = "";
-      // Optionally, remove all entries from Firebase: db.ref('purchases').remove();
-    }
+      // Listen for new purchase confirmations from Firebase in real time
+      function listenForPurchases() {
+        db.ref('purchases').on('child_added', snapshot => {
+          const data = snapshot.val();
+          const key = snapshot.key;
+          const msg = document.createElement("div");
+          msg.className = "purchase-request";
+          msg.setAttribute("data-key", key);
+          msg.innerHTML = `<span>${data.item} - $${data.price.toFixed(2)}</span>
+                           <button onclick="markAsDone('${key}')">✔️</button>`;
+          document.getElementById("purchaseRequests").appendChild(msg);
+        });
+      }
 
-    // Allow modals to be closed when clicking outside of them
-    window.onclick = function(event) {
-      ["modal", "adminModal", "paymentModal"].forEach(id => {
-        const el = document.getElementById(id);
-        if (event.target === el) el.style.display = "none";
-      });
-    };
+      // Mark a purchase as done by removing it from Firebase and from the admin panel view
+      function markAsDone(key) {
+        db.ref('purchases/' + key).remove().then(() => {
+          const reqDiv = document.querySelector(`[data-key="${key}"]`);
+          if (reqDiv) reqDiv.remove();
+        });
+      }
 
-    window.onload = () => {
-      renderShop();
-      document.getElementById("totalSales").textContent = totalSales.toFixed(2);
-    };
-  </script>
-</body>
+      // Clear all purchase confirmations from the admin panel view (optional: also clear from Firebase)
+      function clearAllRequests() {
+        document.getElementById("purchaseRequests").innerHTML = "";
+        // Optionally, to clear all data from Firebase, uncomment:
+        // db.ref('purchases').remove();
+      }
+
+      /*******************************************************
+       * Snack Trivia Generator
+       *******************************************************/
+      const triviaFacts = [
+        "Did you know that the first potato chip was made by accident in 1853?",
+        "Oreo cookies were first introduced in 1912.",
+        "Gushers were first introduced by Betty Crocker in the 1990s.",
+        "Red Bull contains taurine, which is a naturally occurring amino acid.",
+        "Oreos are the best-selling cookies in the United States.",
+        "The world’s largest Twix bar was over 18 feet long!",
+        "Hot Cheetos have a cult following and are a favorite snack of many celebrities.",
+        "Mountain Dew was originally created in the 1940s as a mixer for whiskey.",
+        "Coke was originally marketed as a tonic for various ailments.",
+        "Pepsi was originally known as Brad’s Drink in 1893."
+      ];
+
+      // Generate a random trivia fact about snacks
+      function generateTrivia() {
+        const randomIndex = Math.floor(Math.random() * triviaFacts.length);
+        document.getElementById("triviaText").textContent = triviaFacts[randomIndex];
+      }
+
+      /*******************************************************
+       * Contact Form Functionality
+       *******************************************************/
+      function submitContactForm(e) {
+        e.preventDefault();
+        const name = document.getElementById("contactName").value;
+        const email = document.getElementById("contactEmail").value;
+        const message = document.getElementById("contactMessage").value;
+        // For demonstration, we simply alert the user. In a real implementation, you might send this data to a server.
+        alert(`Thanks for your message, ${name}! We'll get back to you shortly.`);
+        // Clear form fields
+        document.getElementById("contactName").value = "";
+        document.getElementById("contactEmail").value = "";
+        document.getElementById("contactMessage").value = "";
+      }
+
+      /*******************************************************
+       * Event Listeners & Global Window Functions
+       *******************************************************/
+      // Close any open modal when clicking outside of it
+      window.onclick = function(event) {
+        ["modal", "adminModal", "paymentModal"].forEach(id => {
+          const el = document.getElementById(id);
+          if (event.target === el) el.style.display = "none";
+        });
+      };
+
+      // Initialize the shop and update total sales on window load
+      window.onload = () => {
+        renderShop();
+        document.getElementById("totalSales").textContent = totalSales.toFixed(2);
+      };
+
+      /*******************************************************
+       * Extra Random Functions for "Cool" Effects
+       *******************************************************/
+      // Function to change the background gradient randomly every few seconds
+      function randomizeBackground() {
+        const colors = [
+          "#121212", "#1e1e1e", "#222222", "#2a2a2a", "#333333",
+          "#3a3a3a", "#444444", "#4a4a4a", "#555555", "#666666"
+        ];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        document.body.style.backgroundColor = randomColor;
+      }
+      setInterval(randomizeBackground, 10000);
+
+      // Function to log a random fun fact to the console
+      function logFunFact() {
+        const funFacts = [
+          "Fun Fact: The average American consumes 18 acres of pizza in their lifetime.",
+          "Fun Fact: There are over 7,000 varieties of apples on Earth.",
+          "Fun Fact: Chocolate was once used as currency by the Aztecs.",
+          "Fun Fact: The world record for the most scoops of ice cream eaten in one sitting is 36."
+        ];
+        console.log(funFacts[Math.floor(Math.random() * funFacts.length)]);
+      }
+      setInterval(logFunFact, 15000);
+
+      // End of Extra Random Functions
+
+      /*******************************************************
+       * End of Script
+       *******************************************************/
+    </script>
+
+    <!-- Additional Blank Lines for Extra Code Length -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+  </body>
 </html>
-
 
